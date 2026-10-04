@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "run_id", "optimizer_update_index", "batch_uid", "state",
+    "prompt_occurrence_ids", "current_response_count", "control_response_count",
+    "extraction_count", "dedup_count", "grader_count", "reward_count", "artifacts"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "run_id": {"type": "string", "minLength": 1},
+    "optimizer_update_index": {"type": "integer", "minimum": 1},
+    "batch_uid": {"type": "string", "minLength": 1},
+    "state": {"enum": ["pre_update_sealed", "committed"]},
+    "prompt_occurrence_ids": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "current_response_count": {"type": "integer", "minimum": 16},
+    "control_response_count": {"type": "integer", "minimum": 8},
+    "extraction_count": {"type": "integer", "minimum": 8},
+    "dedup_count": {"type": "integer", "minimum": 1},
+    "grader_count": {"type": "integer", "minimum": 16},
+    "reward_count": {"type": "integer", "minimum": 16},
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": {"type": "string", "minLength": 1}
+    }
+  }
+}

@@ -1,0 +1,2 @@
+- name: seeded_single_turn_agent
+  _target_: dynamic_rubric.training.seeded_agent.SeededSingleTurnAgentLoop

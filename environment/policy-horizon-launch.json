@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "served_model": "Qwen/Qwen3-1.7B",
+  "model_revision": "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+  "tokenizer_revision": "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+  "checkpoint_hash": "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+  "thinking": false,
+  "model_path": "models/Qwen3-1.7B"
+}

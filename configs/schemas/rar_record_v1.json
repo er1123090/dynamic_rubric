@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rar_record_v1",
+  "type": "object",
+  "required": [
+    "schema_version", "prompt_id", "prompt_hash", "domain", "messages", "r0", "strata"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "prompt_id": {"type": "string", "minLength": 1},
+    "prompt_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "domain": {"enum": ["medicine", "science"]},
+    "messages": {"type": "array", "minItems": 1},
+    "strata": {"type": "object"},
+    "r0": {
+      "type": "object",
+      "required": ["criteria"],
+      "properties": {
+        "criteria": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "criterion_id", "criterion", "importance_class", "criterion_type",
+              "weight_units", "canonical_criterion_hash", "positive_form"
+            ],
+            "properties": {
+              "importance_class": {"enum": ["essential", "important", "optional", "pitfall"]},
+              "criterion_type": {"enum": ["quality", "pitfall"]},
+              "weight_units": {"enum": [10, 7, 3, 9]},
+              "canonical_criterion_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "positive_form": {"const": true}
+            }
+          }
+        }
+      }
+    }
+  }
+}

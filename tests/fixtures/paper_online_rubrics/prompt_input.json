@@ -1,0 +1,9 @@
+{
+  "prompt": [{"role": "user", "content": "Explain why the sky appears blue."}],
+  "existing_rubric": [
+    {"criterion_id": "offline-1", "criterion": "Answer the question directly", "weight": 3},
+    {"criterion_id": "offline-2", "criterion": "Avoid unsupported claims", "weight": -2}
+  ],
+  "response_a": "Blue light is scattered more strongly by the atmosphere.",
+  "response_b": "The sky is blue because oceans reflect onto it."
+}

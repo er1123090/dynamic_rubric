@@ -1,0 +1,378 @@
+schema_version: 1
+output_root: ../../outputs/policy_eval/medicine_dense_all48_healthbench500_20260926
+seed: 11
+bootstrap_replicates: 10000
+healthbench_upstream:
+  repository: ../../environment/upstream/simple-evals
+  commit: 5e623c2b400af62a1278e23595f95b0853d7fe8a
+  source_path: healthbench_eval.py
+datasets:
+  healthbench:
+    kind: healthbench
+    path: ../../data/source/healthbench_full_2025-05-07-06-14-12.jsonl
+    expected_count: 5000
+    sha256: e99dd3c6372c10d6fcc5e385c5fae69d0dd40392dae56836ef9493ae324ecd2f
+    sample_count: 500
+    sample_seed: 11
+models:
+  online_dense_step_001:
+    method: online
+    role: base
+    step: 1
+    served_model: online_dense_step_001
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_1
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_002:
+    method: online
+    role: checkpoint
+    step: 2
+    served_model: online_dense_step_002
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_2
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_003:
+    method: online
+    role: checkpoint
+    step: 3
+    served_model: online_dense_step_003
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_3
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_004:
+    method: online
+    role: checkpoint
+    step: 4
+    served_model: online_dense_step_004
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_4
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_005:
+    method: online
+    role: checkpoint
+    step: 5
+    served_model: online_dense_step_005
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_5
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_006:
+    method: online
+    role: checkpoint
+    step: 6
+    served_model: online_dense_step_006
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_6
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_007:
+    method: online
+    role: checkpoint
+    step: 7
+    served_model: online_dense_step_007
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_7
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_008:
+    method: online
+    role: checkpoint
+    step: 8
+    served_model: online_dense_step_008
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_8
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_009:
+    method: online
+    role: checkpoint
+    step: 9
+    served_model: online_dense_step_009
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_9
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_010:
+    method: online
+    role: checkpoint
+    step: 10
+    served_model: online_dense_step_010
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_10
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_011:
+    method: online
+    role: checkpoint
+    step: 11
+    served_model: online_dense_step_011
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_11
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_012:
+    method: online
+    role: checkpoint
+    step: 12
+    served_model: online_dense_step_012
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_12
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_013:
+    method: online
+    role: checkpoint
+    step: 13
+    served_model: online_dense_step_013
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_13
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_014:
+    method: online
+    role: checkpoint
+    step: 14
+    served_model: online_dense_step_014
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_14
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_015:
+    method: online
+    role: checkpoint
+    step: 15
+    served_model: online_dense_step_015
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_15
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_016:
+    method: online
+    role: checkpoint
+    step: 16
+    served_model: online_dense_step_016
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_16
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_017:
+    method: online
+    role: checkpoint
+    step: 17
+    served_model: online_dense_step_017
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_17
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_018:
+    method: online
+    role: checkpoint
+    step: 18
+    served_model: online_dense_step_018
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_18
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_019:
+    method: online
+    role: checkpoint
+    step: 19
+    served_model: online_dense_step_019
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_19
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_020:
+    method: online
+    role: checkpoint
+    step: 20
+    served_model: online_dense_step_020
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_20
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_021:
+    method: online
+    role: checkpoint
+    step: 21
+    served_model: online_dense_step_021
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_21
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_022:
+    method: online
+    role: checkpoint
+    step: 22
+    served_model: online_dense_step_022
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_22
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_023:
+    method: online
+    role: checkpoint
+    step: 23
+    served_model: online_dense_step_023
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_23
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_024:
+    method: online
+    role: checkpoint
+    step: 24
+    served_model: online_dense_step_024
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_24
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_025:
+    method: online
+    role: checkpoint
+    step: 25
+    served_model: online_dense_step_025
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_25
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_026:
+    method: online
+    role: checkpoint
+    step: 26
+    served_model: online_dense_step_026
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_26
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_027:
+    method: online
+    role: checkpoint
+    step: 27
+    served_model: online_dense_step_027
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_27
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_028:
+    method: online
+    role: checkpoint
+    step: 28
+    served_model: online_dense_step_028
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_28
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_029:
+    method: online
+    role: checkpoint
+    step: 29
+    served_model: online_dense_step_029
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_29
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_030:
+    method: online
+    role: checkpoint
+    step: 30
+    served_model: online_dense_step_030
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_30
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_031:
+    method: online
+    role: checkpoint
+    step: 31
+    served_model: online_dense_step_031
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_31
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_032:
+    method: online
+    role: checkpoint
+    step: 32
+    served_model: online_dense_step_032
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_32
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_033:
+    method: online
+    role: checkpoint
+    step: 33
+    served_model: online_dense_step_033
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_33
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_034:
+    method: online
+    role: checkpoint
+    step: 34
+    served_model: online_dense_step_034
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_34
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_035:
+    method: online
+    role: checkpoint
+    step: 35
+    served_model: online_dense_step_035
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_35
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_036:
+    method: online
+    role: checkpoint
+    step: 36
+    served_model: online_dense_step_036
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_36
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_037:
+    method: online
+    role: checkpoint
+    step: 37
+    served_model: online_dense_step_037
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_37
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_038:
+    method: online
+    role: checkpoint
+    step: 38
+    served_model: online_dense_step_038
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_38
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_039:
+    method: online
+    role: checkpoint
+    step: 39
+    served_model: online_dense_step_039
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_39
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_040:
+    method: online
+    role: checkpoint
+    step: 40
+    served_model: online_dense_step_040
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_40
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_041:
+    method: online
+    role: checkpoint
+    step: 41
+    served_model: online_dense_step_041
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_41
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_042:
+    method: online
+    role: checkpoint
+    step: 42
+    served_model: online_dense_step_042
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_42
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_043:
+    method: online
+    role: checkpoint
+    step: 43
+    served_model: online_dense_step_043
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_43
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_044:
+    method: online
+    role: checkpoint
+    step: 44
+    served_model: online_dense_step_044
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_44
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_045:
+    method: online
+    role: checkpoint
+    step: 45
+    served_model: online_dense_step_045
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_45
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_046:
+    method: online
+    role: checkpoint
+    step: 46
+    served_model: online_dense_step_046
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_46
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_047:
+    method: online
+    role: checkpoint
+    step: 47
+    served_model: online_dense_step_047
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_47
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_048:
+    method: online
+    role: final
+    step: 48
+    served_model: online_dense_step_048
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_48
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+generation:
+  base_url: http://127.0.0.1:28141/v1
+  timeout_seconds: 600
+  max_retries: 4
+  max_output_tokens: 4096
+  workers: 64
+  max_in_flight: 64
+grading:
+  base_url:
+  - http://127.0.0.1:28144/v1
+  - http://127.0.0.1:28145/v1
+  - http://127.0.0.1:28146/v1
+  served_model: Qwen/Qwen3-32B
+  revision: 9216db5781bf21249d130ec9da846c4624c16137
+  timeout_seconds: 600
+  max_retries: 4
+  max_output_tokens: 1024
+  workers: 192
+  max_in_flight: 192
+  parse_retries: 2
+runtime:
+  vllm: ''  # Required: set this machine's vLLM executable.
+  max_model_len: 32768
+  gpu_memory_utilization: 0.9
+  startup_timeout_seconds: 900

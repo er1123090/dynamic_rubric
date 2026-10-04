@@ -1,0 +1,380 @@
+--- a/verl/trainer/ppo/ray_trainer.py
++++ b/verl/trainer/ppo/ray_trainer.py
+@@ -63,7 +63,7 @@
+ from verl.utils.checkpoint.checkpoint_manager import find_latest_ckpt_path, should_save_ckpt_esi
+ from verl.utils.config import omega_conf_to_dataclass
+ from verl.utils.debug import marked_timer
+-from verl.utils.import_utils import deprecated, load_class_from_fqn
++from verl.utils.import_utils import deprecated, load_class_from_fqn, load_extern_object
+ from verl.utils.metric import reduce_metrics
+ from verl.utils.py_functional import rename_dict
+ from verl.utils.seqlen_balancing import calculate_workload, get_seqlen_balanced_partitions, log_seqlen_unbalance
+@@ -73,6 +73,28 @@
+ from verl.workers.config import DistillationConfig, EngineConfig
+ from verl.workers.rollout.llm_server import LLMServerManager
+ from verl.workers.utils.padding import left_right_2_no_padding, no_padding_2_padding
++
++
++def _resolve_ppo_mini_batch_size(
++    *, configured_prompt_batch_size: int, rollout_n: int, actual_response_batch_size: int
++) -> int:
++    """Keep one PPO mini-batch for a smaller, non-dropped final prompt batch."""
++
++    configured_response_batch_size = configured_prompt_batch_size * rollout_n
++    if configured_response_batch_size <= 0 or actual_response_batch_size <= 0:
++        raise ValueError("PPO batch sizes must be positive")
++    if actual_response_batch_size % rollout_n != 0:
++        raise ValueError(
++            f"response batch size {actual_response_batch_size} is not grouped by rollout.n={rollout_n}"
++        )
++    if actual_response_batch_size < configured_response_batch_size:
++        return actual_response_batch_size
++    if actual_response_batch_size % configured_response_batch_size != 0:
++        raise ValueError(
++            f"response batch size {actual_response_batch_size} is not divisible by configured "
++            f"PPO mini-batch size {configured_response_batch_size}"
++        )
++    return configured_response_batch_size
+ 
+ 
+ def apply_kl_penalty(data: DataProto, kl_ctrl: core_algos.AdaptiveKLController, kl_penalty="kl"):
+@@ -284,6 +306,120 @@
+ 
+ @deprecated("Legacy trainer is deprecated, and wil be removed in v0.9.0. Please use `trainer.use_v1=True` instead.")
+ class RayPPOTrainer:
++    def _online_step_hook_config(self):
++        """Return the opt-in full-batch reward hook config, if enabled."""
++
++        hook_config = self.config.reward.get("online_step_hook")
++        if not hook_config or not hook_config.get("enabled", False):
++            return None
++        return hook_config
++
++    def _load_online_step_hooks(self):
++        hook_config = self._online_step_hook_config()
++        if hook_config is None:
++            return None
++        cached = getattr(self, "_online_step_hooks", None)
++        if cached is not None:
++            return cached
++
++        path = hook_config.get("path")
++        prepare_name = hook_config.get("name")
++        commit_name = hook_config.get("commit_name", "commit_step")
++        if not path or not prepare_name:
++            raise RuntimeError("online_step_hook requires non-empty path and name")
++        custom_reward = self.config.reward.get("custom_reward_function") or {}
++        if custom_reward.get("path"):
++            raise RuntimeError(
++                "online_step_hook cannot run with the scalar custom reward loop; "
++                "online rewards must be prepared by the full-batch hook"
++            )
++        checkpoint_config = self.config.actor_rollout_ref.actor.checkpoint
++        if checkpoint_config.get("async_save", False):
++            raise RuntimeError("online_step_hook requires synchronous checkpoints")
++
++        runtime_config = self.config.reward.get("online_step_runtime") or {}
++        runtime_path = runtime_config.get("path")
++        runtime_name = runtime_config.get("name")
++        if not runtime_path or not runtime_name:
++            raise RuntimeError("online_step_runtime requires non-empty path and name")
++        runtime_factory = load_extern_object(module_path=runtime_path, object_name=runtime_name)
++        prepare = load_extern_object(module_path=path, object_name=prepare_name)
++        commit = load_extern_object(module_path=path, object_name=commit_name)
++        if not callable(runtime_factory) or not callable(prepare) or not callable(commit):
++            raise RuntimeError("online_step_hook runtime, prepare, and commit objects must be callable")
++        runtime = runtime_factory(config=self.config, trainer=self)
++        if runtime is None:
++            raise RuntimeError("online_step_hook runtime factory returned None")
++        self.online_reward_runtime = runtime
++        self._online_reward_runtime = runtime
++        cached = (prepare, commit)
++        self._online_step_hooks = cached
++        return cached
++
++    def _prepare_online_rewards(self, batch: DataProto) -> DataProto:
++        hooks = self._load_online_step_hooks()
++        if hooks is None:
++            return batch
++        if "rm_scores" in batch.batch:
++            raise RuntimeError("online_step_hook refuses precomputed rm_scores")
++
++        prepare, _ = hooks
++        prepared = prepare(batch=batch, global_step=self.global_steps, trainer=self)
++        if prepared is not None:
++            if not isinstance(prepared, DataProto):
++                raise RuntimeError("online reward hook must return DataProto or None")
++            batch = prepared
++
++        if "rm_scores" not in batch.batch:
++            raise RuntimeError("sealed online reward hook result is missing rm_scores")
++        rm_scores = batch.batch["rm_scores"]
++        responses = batch.batch["responses"]
++        if rm_scores.shape != responses.shape:
++            raise RuntimeError(
++                f"online rm_scores shape {tuple(rm_scores.shape)} must match responses "
++                f"shape {tuple(responses.shape)}"
++            )
++        if not torch.isfinite(rm_scores).all():
++            raise RuntimeError("online rm_scores must all be finite")
++
++        response_mask = batch.batch.get("response_mask")
++        if response_mask is None:
++            response_mask = compute_response_mask(batch)
++            batch.batch["response_mask"] = response_mask
++        valid_counts = response_mask.to(dtype=torch.long).sum(dim=-1)
++        if torch.any(valid_counts <= 0):
++            raise RuntimeError("online reward requires at least one valid response token per sample")
++        token_positions = torch.arange(
++            response_mask.shape[-1], device=response_mask.device
++        ).unsqueeze(0)
++        last_valid = torch.where(
++            response_mask.to(dtype=torch.bool), token_positions, -1
++        ).amax(dim=-1)
++        terminal_mask = torch.zeros_like(response_mask, dtype=torch.bool)
++        terminal_mask.scatter_(1, last_valid.unsqueeze(-1), True)
++        if torch.any(rm_scores.masked_select(~terminal_mask) != 0):
++            raise RuntimeError("online scalar rewards must be placed only at the last valid token")
++
++        trace_refs = batch.non_tensor_batch.get("online_trace_ref")
++        if trace_refs is None or len(trace_refs) != rm_scores.shape[0]:
++            raise RuntimeError("online reward hook must bind one online_trace_ref per response")
++        if any(not str(value) for value in trace_refs):
++            raise RuntimeError("online_trace_ref values must be non-empty")
++        if batch.meta_info.get("online_step_sealed") is not True:
++            raise RuntimeError("online reward hook result is not sealed")
++        if int(batch.meta_info.get("online_optimizer_update_index", -1)) != self.global_steps:
++            raise RuntimeError("online reward hook result is bound to the wrong optimizer step")
++        if not str(batch.meta_info.get("online_manifest_hash", "")):
++            raise RuntimeError("online reward hook result is missing its manifest hash")
++        return batch
++
++    def _commit_online_step(self, checkpoint_dir: str | None = None) -> None:
++        hooks = self._load_online_step_hooks()
++        if hooks is None:
++            return
++        _, commit = hooks
++        commit(global_step=self.global_steps, checkpoint_dir=checkpoint_dir, trainer=self)
++
+     """Distributed PPO trainer using Ray for scalable reinforcement learning.
+ 
+     This trainer orchestrates distributed PPO training across multiple nodes and GPUs,
+@@ -406,7 +542,7 @@
+             dataset=self.train_dataset,
+             batch_size=self.config.data.get("gen_batch_size", None) or self.config.data.train_batch_size,
+             num_workers=num_workers,
+-            drop_last=True,
++            drop_last=self.config.data.get("train_drop_last", True),
+             collate_fn=collate_fn,
+             sampler=train_sampler,
+         )
+@@ -972,7 +1108,11 @@
+         # infrastructure overview: https://verl.readthedocs.io/en/latest/advance/reward_loop.html#architecture-design
+         # agent_reward_loop: streaming reward computation with actor rollout
+         # two conditions satisfied: (1) no reward model, or (2) reward model with extra resource pool
+-        enable_agent_reward_loop = not self.use_rm or self.config.reward.reward_model.enable_resource_pool
++        # A full-batch online hook must see the complete response group before any reward is computed.
++        online_step_enabled = self._online_step_hook_config() is not None
++        enable_agent_reward_loop = not online_step_enabled and (
++            not self.use_rm or self.config.reward.reward_model.enable_resource_pool
++        )
+ 
+         self.llm_server_manager = LLMServerManager.create(
+             config=self.config, worker_group=self.actor_rollout_wg, rollout_resource_pool=actor_rollout_resource_pool
+@@ -1129,7 +1269,15 @@
+         if os.path.exists(dataloader_local_path):
+             steps_per_epoch = len(self.train_dataloader)
+             at_epoch_boundary = steps_per_epoch > 0 and self.global_steps % steps_per_epoch == 0
+-            if at_epoch_boundary:
++            if self._online_step_hook_config() is not None:
++                from dynamic_rubric.training.dataloader_resume import restore_online_dataloader_state
++
++                dataloader_state_dict = torch.load(dataloader_local_path, weights_only=False)
++                restore_online_dataloader_state(
++                    self.train_dataloader, dataloader_state_dict, global_step=self.global_steps
++                )
++                print(f"Restored online dataloader including sampler RNG at step {self.global_steps}", flush=True)
++            elif at_epoch_boundary:
+                 print(
+                     f"Skipping dataloader state restore: global_steps={self.global_steps} "
+                     f"is at an epoch boundary (steps_per_epoch={steps_per_epoch}). "
+@@ -1378,8 +1526,18 @@
+                 and not distillation_loss_cfg.use_task_rewards
+                 and not distillation_loss_cfg.use_policy_gradient
+             )
+-        ppo_mini_batch_size = self.config.actor_rollout_ref.actor.ppo_mini_batch_size
+-        ppo_mini_batch_size = ppo_mini_batch_size * self.config.actor_rollout_ref.rollout.n
++        rollout_n = self.config.actor_rollout_ref.rollout.n
++        configured_ppo_mini_batch_size = self.config.actor_rollout_ref.actor.ppo_mini_batch_size * rollout_n
++        ppo_mini_batch_size = _resolve_ppo_mini_batch_size(
++            configured_prompt_batch_size=self.config.actor_rollout_ref.actor.ppo_mini_batch_size,
++            rollout_n=rollout_n,
++            actual_response_batch_size=batch_td.shape[0],
++        )
++        if ppo_mini_batch_size != configured_ppo_mini_batch_size:
++            print(
++                "Adjusted PPO mini-batch size for partial prompt batch: "
++                f"{configured_ppo_mini_batch_size} -> {ppo_mini_batch_size} responses"
++            )
+         ppo_epochs = self.config.actor_rollout_ref.actor.ppo_epochs
+         seed = self.config.actor_rollout_ref.actor.data_loader_seed
+         shuffle = self.config.actor_rollout_ref.actor.shuffle
+@@ -1573,7 +1731,35 @@
+                     del combined_gen_batch, combined_gen_output
+                     # repeat to align with repeated responses in rollout
+                     batch = batch.repeat(repeat_times=self.config.actor_rollout_ref.rollout.n, interleave=True)
++                    if self._online_step_hook_config() is not None:
++                        online_reward_input_keys = list(
++                            {"data_source", "reward_model", "extra_info", "uid"}
++                            & gen_batch_output.non_tensor_batch.keys()
++                        )
++                        if online_reward_input_keys:
++                            gen_batch_output.pop(non_tensor_batch_keys=online_reward_input_keys)
+                     batch = batch.union(gen_batch_output)
++
++                    prefetched_logprobs = None
++                    hook_config = self._online_step_hook_config()
++                    overlap_enabled = (
++                        hook_config is not None
++                        and hook_config.get("prefetch_logprobs", False)
++                        and not getattr(self, "_online_prefetch_disabled", False)
++                        # The final partial batch stays on the original serial
++                        # path: its dynamic batching shape was not GPU-validated.
++                        and len(batch)
++                        == self.config.data.train_batch_size * self.config.actor_rollout_ref.rollout.n
++                    )
++                    if overlap_enabled:
++                        from dynamic_rubric.training.logprob_prefetch import prepare_with_logprob_prefetch
++
++                        print(
++                            f"[online-prefetch] step={self.global_steps} actor->ref overlaps remote reward", flush=True
++                        )
++                        batch, prefetched_logprobs = prepare_with_logprob_prefetch(self, batch, metrics)
++                    else:
++                        batch = self._prepare_online_rewards(batch)
+ 
+                     if "response_mask" not in batch.batch.keys():
+                         batch.batch["response_mask"] = compute_response_mask(batch)
+@@ -1593,6 +1779,15 @@
+                             continue
+                         images_seqlens_all.extend(multi_modal_input["images_seqlens"].tolist())
+                     batch.meta_info["images_seqlens"] = images_seqlens_all
++                    if prefetched_logprobs is not None:
++                        prefetched_logprobs.validate_inputs(batch)
++                    # Every restarted trainer validates its first full batch using
++                    # the original serial path. That batch always uses serial
++                    # outputs; exact equality gates subsequent speculative reuse.
++                    verify_prefetch = prefetched_logprobs is not None and not getattr(
++                        self, "_online_prefetch_verified", False
++                    )
++                    prefetch_exact = True
+                     with marked_timer("reward", timing_raw, color="yellow"):
+                         # compute reward model score
+                         if self.use_rm and "rm_scores" not in batch.batch.keys():
+@@ -1618,22 +1813,36 @@
+                         )
+                     else:  # Recompute old_log_probs
+                         with marked_timer("old_log_prob", timing_raw, color="blue"):
+-                            old_log_prob, old_log_prob_mfu = self._compute_old_log_prob(batch)
+-                            entropys = old_log_prob.batch["entropys"]
+-                            response_masks = batch.batch["response_mask"]
+                             actor_config = self.config.actor_rollout_ref.actor
+-                            entropy_agg = agg_loss(
+-                                loss_mat=entropys,
+-                                loss_mask=response_masks,
+-                                loss_agg_mode=actor_config.loss_agg_mode,
+-                                loss_scale_factor=actor_config.loss_scale_factor,
++                            calculate_entropy = actor_config.calculate_entropy or (
++                                actor_config.entropy_coeff != 0.0
+                             )
++                            if prefetched_logprobs is None or verify_prefetch:
++                                old_log_prob, old_log_prob_mfu = self._compute_old_log_prob(
++                                    batch, calculate_entropy=calculate_entropy
++                                )
++                                if verify_prefetch:
++                                    prefetch_exact = prefetched_logprobs.matches(old_log_prob, "old")
++                                    metrics["overlap/old_exact_match"] = int(prefetch_exact)
++                            else:
++                                old_log_prob, old_log_prob_mfu = (
++                                    prefetched_logprobs.old, prefetched_logprobs.old_mfu
++                                )
+                             old_log_prob_metrics = {
+-                                "actor/entropy": entropy_agg.detach().item(),
+                                 "perf/mfu/actor_infer": old_log_prob_mfu,
+                             }
++                            if calculate_entropy:
++                                entropys = old_log_prob.batch["entropys"]
++                                response_masks = batch.batch["response_mask"]
++                                entropy_agg = agg_loss(
++                                    loss_mat=entropys,
++                                    loss_mask=response_masks,
++                                    loss_agg_mode=actor_config.loss_agg_mode,
++                                    loss_scale_factor=actor_config.loss_scale_factor,
++                                )
++                                old_log_prob_metrics["actor/entropy"] = entropy_agg.detach().item()
++                                old_log_prob.batch.pop("entropys")
+                             metrics.update(old_log_prob_metrics)
+-                            old_log_prob.batch.pop("entropys")
+                             if "routed_experts" in batch.batch and "routed_experts" in old_log_prob.batch:
+                                 raise ValueError(
+                                     "Detected conflicting router replay configuration: "
+@@ -1653,8 +1862,26 @@
+                     if self.use_reference_policy:
+                         # compute reference log_prob
+                         with marked_timer(str(Role.RefPolicy), timing_raw, color="olive"):
+-                            ref_log_prob = self._compute_ref_log_prob(batch)
++                            if prefetched_logprobs is None or verify_prefetch:
++                                ref_log_prob = self._compute_ref_log_prob(batch)
++                                if verify_prefetch:
++                                    ref_exact = prefetched_logprobs.matches(ref_log_prob, "ref")
++                                    metrics["overlap/ref_exact_match"] = int(ref_exact)
++                                    prefetch_exact = prefetch_exact and ref_exact
++                            else:
++                                ref_log_prob = prefetched_logprobs.ref
+                             batch = batch.union(ref_log_prob)
++                    if verify_prefetch:
++                        self._online_prefetch_verified = prefetch_exact
++                        self._online_prefetch_disabled = not prefetch_exact
++                        verdict = (
++                            "exact-match; enabled" if prefetch_exact else "mismatch; disabled; serial outputs retained"
++                        )
++                        print(f"[online-prefetch] step={self.global_steps} {verdict}", flush=True)
++                    if prefetched_logprobs is not None:
++                        metrics["overlap/validation_batch"] = int(verify_prefetch)
++                        metrics["overlap/prefetched_outputs_used"] = int(not verify_prefetch)
++                        metrics["overlap/enabled_after_validation"] = int(self._online_prefetch_verified)
+ 
+                     # compute values
+                     if self.use_critic:
+@@ -1736,6 +1963,7 @@
+                         # 2. It's the last training step.
+                         # 3. The current step number is a multiple of the save frequency.
+                         # 4. The ESI(Elastic Server Instance)/training plan is close to expiration.
++                        online_step_enabled = self._online_step_hook_config() is not None
+                         scheduled_checkpoint = (
+                             self.global_steps in checkpoint_steps
+                             if checkpoint_steps
+@@ -1745,11 +1973,22 @@
+                                 or self.global_steps % self.config.trainer.save_freq == 0
+                             )
+                         )
+-                        if scheduled_checkpoint or esi_close_to_expiration:
++                        checkpoint_saved = scheduled_checkpoint or esi_close_to_expiration
++                        if checkpoint_saved:
+                             if esi_close_to_expiration:
+                                 print("Force saving checkpoint: ESI instance expiration approaching.")
+                             with marked_timer("save_checkpoint", timing_raw, color="green"):
+                                 self._save_checkpoint()
++                        if online_step_enabled:
++                            checkpoint_dir = (
++                                os.path.join(
++                                    self.config.trainer.default_local_dir,
++                                    f"global_step_{self.global_steps}",
++                                )
++                                if checkpoint_saved
++                                else None
++                            )
++                            self._commit_online_step(checkpoint_dir)
+ 
+                         # update weights from trainer to rollout
+                         with marked_timer("update_weights", timing_raw, color="red"):

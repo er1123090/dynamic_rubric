@@ -1,0 +1,161 @@
+schema_version: 1
+data_role: heldout_validation
+output_root: ../../outputs/analysis/medicine_static_online_heldout_validation100_20260910
+seed: 11
+training_enabled: false
+optimizer_required: false
+
+# New fixed validation100: sampled once from development150. It is disjoint from
+# both train1500 and the separately preserved held-out test300.
+validation:
+  source_split: development
+  source_count: 150
+  count: 100
+  prompt_ids_sha256: 13351d9127033fc7ed10ed6b200af387ce83ee434050a1e6f2f6dcc2ffc390d5
+  sample_seed: 11
+  remains_outside_training: true
+datasets:
+  train:
+    path: ../../data/rar/medicine/eval300/train.jsonl
+    expected_count: 1500
+    sha256: 8f2d0d450f06b51f3752534db10b3a6023e24c326985f04f005a768ae6f73e66
+  development:
+    path: ../../data/rar/medicine/eval300/development.jsonl
+    expected_count: 150
+    sha256: f8e24ae79a4c42b6228586b7ef2c336f5ce7e0f4c351d112a2b241e553c17489
+  heldout_test:
+    path: ../../data/rar/medicine/eval300/final.jsonl
+    expected_count: 300
+    sha256: ff44df0f2e654924a43ae63559bb8ea06f5fb41badbebc4eb6390b0544f73d73
+
+checkpoint_steps:
+  static: [0, 3, 6, 9, 13, 16, 24, 32, 40, 48]
+  online: [0, 3, 6, 9, 12, 13, 15, 16, 18, 21, 24, 27, 30, 32, 33, 34, 36, 39, 40, 42, 45, 48]
+methods:
+  static:
+    training_rubric: static_r0
+    audit_rubrics: posthoc_online_style_step_local
+    base_repo: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-000
+    base_revision: 52048ecb900381af16cfc296a9c262e7affa60ad
+    checkpoint_repo_template: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-{step:03d}
+    checkpoint_revisions:
+      3: a3eb6e330b636db731cd439ea36007275411bdd7
+      6: 266729bd6842524867f5f9bc8b3ffd98d3f501e9
+      9: 391b1b73e4bf150d1cfe0d2c35f36000ce909dbb
+      13: de30539fe807a4598a88b8b1f6a34d69e3ab02bc
+      16: 7215fe65c06fd19dc1c3a0020e2e46b6e7aa2354
+      24: 934ff4b9233500c29dc371ec2b5405ea88b2df8f
+      32: 01ca379cb08371313776e5da34e1e18ba37a029e
+      40: f68499a4ddc99e9e956749b11a07d6fed9c6e622
+      48: b860b25c0b78c7854a4155aabc4bc3164435071d
+  online:
+    training_rubric: online_rubrics
+    audit_rubrics: posthoc_online_style_step_local
+    base_repo: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-000
+    base_revision: 3cee67a373ee0f1ebd6568379a4e9e5dd01fba76
+    checkpoint_repo_template: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-{step:03d}
+    checkpoint_revisions:
+      3: 5ef4227f9301af30677382215ceb594714a3582e
+      6: a88a7494bf124344ee68ee57a7b79aa94b29297f
+      9: f9bf4a90d322137e919a23ed36621df70ea4b656
+      12: 457258d61e4c8f7df621b44bf96934b091d7cef0
+      13: 89036adab90a949a60cd671d315b3b4adba9bd4d
+      15: 617fe5d28f21824a5e6f05c8dbfec103f1822955
+      16: 5ffa4d3449d78ae7046da93f2188fb9665ac909f
+      18: dbb333272d18f7056de7f7ecc8a4b2bd5d4aa56c
+      21: d2902ddeb811ce3f30cea029aaf2851dc9a42704
+      24: 49433196ffb81b17fb1f766143ec547f72dfac0a
+      27: 512cad2889110dba7914b5e7d35e6552f9c1b004
+      30: 9ad95eee13871bfd976cba6c1a82777c093c3d49
+      32: 0fcbe0bd07fee1c5841e265c85e53bc25cc07d6e
+      33: 7499cad57e7d319d51e1ff22e736eedd976a34d9
+      34: 27fe483a95b748cc52c27a94653ab24cf934552f
+      36: a8803e09e4da97de714cfedfbe85efe509604786
+      39: c323e9dad654b93b161955d93a0544ac18f01ccb
+      40: f7e3dc9f497ef01f7e53a72ec41771e985650515
+      42: 33efa35a34652554c22f6f7f2da77e2add5cde45
+      45: afb3b96a2f71ef8f021f5a567df31695b27cc6f8
+      48: ee47df34e2a07b9e175cba49d576bf09541f9528
+
+policy_generation:
+  base_url: http://127.0.0.1:28131/v1
+  temperature: 1.0
+  top_p: 0.95
+  max_output_tokens: 3584
+  timeout_seconds: 600
+  max_retries: 4
+  workers: 32
+  max_in_flight: 32
+  thinking: false
+  pool_a_per_prompt: 8
+  pool_b_per_prompt: 16
+  own_pi0_controls_per_prompt: 8
+rubric_generation:
+  base_url: http://127.0.0.1:28011/v1
+  model: openai/gpt-oss-120b
+  revision: b5c939de8f754692c1647ca79fbf85e8c1e70f8a
+  construction: r0_union_deduplicated_new_criteria
+  accumulation: step_local
+  pool_a_only: true
+  controls: own_method_pi0
+  thinking: false
+grading:
+  base_urls:
+    - http://127.0.0.1:28132/v1
+    - http://127.0.0.1:28133/v1
+  model: Qwen/Qwen3-32B
+  revision: 9216db5781bf21249d130ec9da846c4624c16137
+  identical_pool_b_within_method_policy: true
+  canonical_grade_labels: [PRESENT, NOT_PRESENT]
+  absence_semantics: NOT_PRESENT
+  negative_requirement_semantics: PRESENT_means_requirement_satisfied
+  thinking: false
+policy_lifecycle:
+  host: trainer
+  gpu: 1
+  vllm: ''  # Required: set this machine's vLLM executable.
+  port: 28131
+  temporary_download_root: ''  # Required: set a writable temporary directory.
+  temporary_root_sentinel: .heldout_validation_root.json
+  temporary_root_identity: rq2-medicine-heldout-validation100-policy-cache-v1
+  gpu_memory_utilization: 0.90
+  max_model_len: 32768
+  startup_timeout_seconds: 900
+  one_checkpoint_at_a_time: true
+  verified_temp_eviction: true
+execution:
+  smoke_gates:
+    - {method: static, step: 6}
+    - {method: online, step: 6}
+  run_all_phase_order: [smoke-gate, policies, rubrics, scores, analyze]
+  phase_order:
+    - trainer_gpu1_policy_checkpoints
+    - trainer_gpu1_gpt_oss_rubric_generation
+    - inference_b_gpu01_qwen32b_all_cells_via_trainer_tunnel
+    - cpu_metrics_and_figures
+  trainer_gpu1_model_switch: policy_then_gpt_oss
+  all_cell_schedule:
+    static: 55
+    online: 253
+  judge_transport: trainer_local_tunnel_to_inference_b_gpu01
+metrics:
+  exact_zero_advantage: true
+  pairwise_tie_epsilon: 0.01
+  mad_definition: mean_absolute_deviation_about_group_mean
+  signs:
+    mad_gain: current_minus_stale
+    zar_gain: stale_minus_current
+    ptr_gain: stale_minus_current
+  positive_means_current_rubric_better: true
+  initial_rubric_is_ground_truth: false
+  ranking_similarity_is_correctness: false
+outputs:
+  full_lower_triangle_per_method:
+    static: 55
+    online: 253
+  trajectory_figure_layout: 2x3
+  trajectory_rows: [R0_vs_Rt, R_previous_vs_Rt]
+  trajectory_columns: [MAD, PTR, ZAR]
+
+
+

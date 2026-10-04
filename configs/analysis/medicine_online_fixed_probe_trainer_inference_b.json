@@ -1,0 +1,45 @@
+{
+  "experiment": "phase1_evaluator_update_value",
+  "domain": "medicine",
+  "method": "online_rubrics",
+  "seed": 11,
+  "run_id": "phase1-online-rubrics-medicine-full-20260905-seed11-final",
+  "artifact_root": "outputs/medicine/online_rubrics/seed-11/phase1-fixed-probe-regular-through45-20260908",
+  "dataset": "fixed_train_probe_100_from_rar_medicine_train_1500",
+  "checkpoints": [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45],
+  "fresh_elicitation_checkpoints": [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45],
+  "checkpoint_zero_evaluator": "original_prompt_specific_R0_comparator_not_ground_truth",
+  "initial_rubric_is_ground_truth": false,
+  "policy_response_pool_A": 8,
+  "fixed_pi0_controls_per_prompt": 8,
+  "policy_response_pool_B": 16,
+  "pool_A_used_for_evaluator_construction_only": true,
+  "pool_B_used_for_scoring_only": true,
+  "probe_responses_used_for_gradient": false,
+  "grading_scope": "fresh_and_adjacent_stale_on_identical_pool_B",
+  "grading_cells": 31,
+  "full_reuse_matrix_enabled": false,
+  "held_out_enabled": false,
+  "training_enabled": false,
+  "extractor": {
+    "model": "openai/gpt-oss-120b",
+    "revision": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+    "host": "trainer", "gpus": [1], "tensor_parallel_size": 1,
+    "base_url": "http://127.0.0.1:28011", "vllm_version": "0.19.1",
+    "gpu_memory_utilization": 0.70
+  },
+  "policy_probe_generation": {
+    "model": "Qwen/Qwen3-4B-Instruct-2507",
+    "host": "trainer", "gpus": [1], "tensor_parallel_size": 1,
+    "base_url": "http://127.0.0.1:28006", "gpu_memory_utilization": 0.18,
+    "vllm_version": "0.13.0",
+    "thinking": false
+  },
+  "judge": {
+    "model": "Qwen/Qwen3-32B",
+    "revision": "9216db5781bf21249d130ec9da846c4624c16137",
+    "host": "inference_b", "gpus": [0, 1], "tensor_parallel_size": 2,
+    "base_url": "http://127.0.0.1:28002", "thinking": false
+  },
+  "inference_a_used": false
+}

@@ -1,0 +1,1 @@
+"""Fixed-schema report rendering."""

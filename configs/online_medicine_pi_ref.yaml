@@ -1,0 +1,67 @@
+experiment: paper_faithful_online_rubrics_medicine_pi_ref
+split_seed: 1729
+bootstrap_seed: 2718
+paths:
+  public_data: data/rar/medicine/public
+  artifacts: artifacts/online/medicine/pi_ref
+  results: results/online/medicine/pi_ref
+models:
+  policy:
+    model: Qwen/Qwen3-4B-Instruct-2507
+    revision: cdbee75f17c01a7cc42f958dc650907174af0554
+    tokenizer_revision: cdbee75f17c01a7cc42f958dc650907174af0554
+    local_snapshot: models/Qwen3-4B-Instruct-2507
+  rubric_extractor:
+    requested_model: o3-mini
+    api_mode: sync
+    sync_concurrency: 64
+    reasoning_effort: medium
+    prompt_version: onlinerubric-figure8-paper-v1
+    schema: configs/schemas/onlinerubric_extraction_v1.json
+  rubric_deduplicator:
+    requested_model: o3-mini
+    api_mode: sync
+    sync_concurrency: 64
+    reasoning_effort: medium
+    prompt_version: onlinerubric-figure9-paper-v1
+    schema: configs/schemas/onlinerubric_dedup_v1.json
+  online_grader:
+    requested_model: gpt-4.1-mini
+    api_mode: sync
+    sync_concurrency: 128
+    prompt_version: onlinerubric-figure10-paper-v1
+    schema: configs/schemas/onlinerubric_grader_v1.json
+online_training:
+  mode: paper_online_rubrics_v1
+  experiment_arm: dynamic_online_rubric_grpo
+  baseline_arm: static_r0_grpo
+  reproduction_profile: paper_algorithm_faithful
+  control_policy: pi_ref
+  dataset_profile: rar_medicine
+  actor_model: Qwen/Qwen3-4B-Instruct-2507
+  actor_revision: cdbee75f17c01a7cc42f958dc650907174af0554
+  extractor_model: o3-mini
+  grader_model: gpt-4.1-mini
+  epochs: 3
+  prompt_batch_size: 96
+  rollouts_per_prompt: 16
+  elicitation_pairs_per_prompt: 8
+  learning_rate: 5.0e-6
+  warmup_ratio: 0.1
+  kl_coefficient: 0.01
+  criteria_scope: prompt_step_ephemeral
+  failure_policy: fail_closed
+  checkpoint_interval_steps: 3
+  comparison_checkpoint_steps: [0, 3, 6, 9, 12, 15, 23, 30, 38, 45]
+  stale_comparator: previous_focal_checkpoint
+  drop_last: true
+  expected_train_rows: 1500
+  gpu_count: 2
+  accelerator: NVIDIA H200 NVL
+  per_device_prompt_batch_size: 24
+  gradient_accumulation_steps: 2
+  extractor_concurrency: 64
+  grader_concurrency: 128
+  artifact_inputs: [data/rar/medicine/public/train.jsonl]
+execution:
+  mode: live

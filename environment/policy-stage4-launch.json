@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "served_model": "Qwen/Qwen3-4B-Instruct-2507",
+  "model_revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+  "tokenizer_revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+  "thinking": false,
+  "model_path": "models/Qwen3-4B-Instruct-2507",
+  "physical_gpu": 0,
+  "gpu_memory_utilization": 0.85,
+  "max_model_len": 5632,
+  "max_num_seqs": 64,
+  "max_num_batched_tokens": 65536
+}

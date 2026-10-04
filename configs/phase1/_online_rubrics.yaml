@@ -1,0 +1,37 @@
+models:
+  extractor:
+    model: openai/gpt-oss-120b
+    revision: main
+    thinking: false
+    backend: remote_vllm
+    base_url_env: PHASE1_GPT_OSS_BASE_URL
+    max_output_tokens: 8192
+  deduplicator:
+    model: openai/gpt-oss-120b
+    revision: main
+    thinking: false
+    backend: remote_vllm
+    base_url_env: PHASE1_GPT_OSS_BASE_URL
+    max_output_tokens: 8192
+  judge:
+    model: Qwen/Qwen3-32B
+    revision: 9216db5781bf21249d130ec9da846c4624c16137
+    thinking: false
+    backend: remote_vllm
+    base_url_env: PHASE1_QWEN32B_BASE_URL
+    max_output_tokens: 4096
+
+online_rubrics:
+  policy_responses_per_prompt: 16
+  elicitation_pairs_per_prompt: 8
+  control_policy: pi_0_fixed
+  control_cache: precomputed_immutable
+  augmentation: step_local
+  accumulate_previous_criteria: false
+  fresh_reward_used_for_training: true
+  stale_shadow_only: true
+  stale_lookup_key: prompt_id
+  require_prompt_match: true
+  pool_a_current_count: 8
+  pool_a_pi0_count: 8
+  pool_b_count: 16

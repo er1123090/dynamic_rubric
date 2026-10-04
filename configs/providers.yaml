@@ -1,0 +1,19 @@
+openai:
+  endpoint: https://api.openai.com/v1/responses
+  api_key_env: OPENAI_API_KEY
+  timeout_seconds: 120
+  max_retries: 4
+  arbitrary_model_fallback: false
+vllm:
+  endpoint_env: DYNAMIC_RUBRIC_VLLM_URL
+  policy_endpoint_env: DYNAMIC_RUBRIC_POLICY_URL
+  embedding_endpoint_env: DYNAMIC_RUBRIC_EMBEDDING_URL
+  score_endpoint: /dynamic-rubric/score-targets
+  identity_endpoint: /dynamic-rubric/identity
+  temperature: 0
+  thinking: false
+fake:
+  network_calls: false
+  gpu_calls: false
+  deterministic: true
+

@@ -1,0 +1,6 @@
+{
+  "analysis": "The repeated scattering criteria describe the same quality.",
+  "final_criteria": [
+    {"criterion": "Explain the role of atmospheric scattering", "weight": 2}
+  ]
+}

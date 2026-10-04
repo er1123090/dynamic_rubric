@@ -1,0 +1,28 @@
+experiment: dynamic_rubric_staleness_audit_main
+split_seed: 20250808
+bootstrap_seed: 20250808
+paths:
+  public_data: data/public
+  artifacts: artifacts/main
+  results: results/main
+models:
+  rubric_generator: {requested_model: gpt-5-mini, reasoning_effort: medium}
+  hidden_gt_grader: {requested_model: gpt-5, reasoning_effort: medium}
+  policy: {model: Qwen/Qwen3-4B-Instruct-2507, revision: cdbee75f17c01a7cc42f958dc650907174af0554, tokenizer_revision: cdbee75f17c01a7cc42f958dc650907174af0554, thinking: false}
+  proxy_grader: {model: Qwen/Qwen3-32B, revision: 9216db5781bf21249d130ec9da846c4624c16137, tokenizer_revision: 9216db5781bf21249d130ec9da846c4624c16137, thinking: false, temperature: 0}
+splits:
+  main_train: 512
+  main_probe: 64
+  main_audit: 128
+training:
+  max_steps: 100
+  train_batch_size: 48
+  rollout_n: 8
+  checkpoint_steps: [0, 1, 2, 3, 5, 10, 20, 30, 50, 75, 100]
+  reward_source: static_r0_only
+  artifact_inputs: [artifacts/main/static]
+conditions: [static, every_step, every_5, every_10, triggered, refresh_only]
+execution:
+  mode: live
+  require_pilot_go_decision: true
+

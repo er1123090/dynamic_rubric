@@ -1,0 +1,151 @@
+schema_version: 1
+output_root: ../../outputs/policy_eval/medicine_static_matched_checkpoint_trajectory_hb500_20260926
+seed: 11
+bootstrap_replicates: 10000
+healthbench_upstream:
+  repository: ../../environment/upstream/simple-evals
+  commit: 5e623c2b400af62a1278e23595f95b0853d7fe8a
+  source_path: healthbench_eval.py
+datasets:
+  healthbench:
+    kind: healthbench
+    path: ../../data/source/healthbench_full_2025-05-07-06-14-12.jsonl
+    expected_count: 5000
+    sha256: e99dd3c6372c10d6fcc5e385c5fae69d0dd40392dae56836ef9493ae324ecd2f
+    sample_count: 500
+    sample_seed: 11
+models:
+  static_matched_step_003:
+    method: static
+    role: base
+    step: 3
+    served_model: static_matched_step_003
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-static-r0-matched-seed11-step-003@d79958aa3f8340383784594a8a61a4a23500be7d
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-static-r0-matched-seed11-step-003
+    revision: d79958aa3f8340383784594a8a61a4a23500be7d
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  static_matched_step_006:
+    method: static
+    role: checkpoint
+    step: 6
+    served_model: static_matched_step_006
+    artifact: phase1-static-r0-medicine-qwen3-4b-matched-20260914:global_step_6
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  static_matched_step_009:
+    method: static
+    role: checkpoint
+    step: 9
+    served_model: static_matched_step_009
+    artifact: phase1-static-r0-medicine-qwen3-4b-matched-20260914:global_step_9
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  static_matched_step_012:
+    method: static
+    role: checkpoint
+    step: 12
+    served_model: static_matched_step_012
+    artifact: phase1-static-r0-medicine-qwen3-4b-matched-20260914:global_step_12
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  static_matched_step_015:
+    method: static
+    role: checkpoint
+    step: 15
+    served_model: static_matched_step_015
+    artifact: phase1-static-r0-medicine-qwen3-4b-matched-20260914:global_step_15
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  static_matched_step_018:
+    method: static
+    role: checkpoint
+    step: 18
+    served_model: static_matched_step_018
+    artifact: phase1-static-r0-medicine-qwen3-4b-matched-20260914:global_step_18
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  static_matched_step_021:
+    method: static
+    role: checkpoint
+    step: 21
+    served_model: static_matched_step_021
+    artifact: phase1-static-r0-medicine-qwen3-4b-matched-20260914:global_step_21
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  static_matched_step_024:
+    method: static
+    role: checkpoint
+    step: 24
+    served_model: static_matched_step_024
+    artifact: phase1-static-r0-medicine-qwen3-4b-matched-20260914:global_step_24
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  static_matched_step_027:
+    method: static
+    role: checkpoint
+    step: 27
+    served_model: static_matched_step_027
+    artifact: phase1-static-r0-medicine-qwen3-4b-matched-20260914:global_step_27
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  static_matched_step_030:
+    method: static
+    role: checkpoint
+    step: 30
+    served_model: static_matched_step_030
+    artifact: phase1-static-r0-medicine-qwen3-4b-matched-20260914:global_step_30
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  static_matched_step_033:
+    method: static
+    role: checkpoint
+    step: 33
+    served_model: static_matched_step_033
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-static-r0-matched-seed11-step-033@8ff26afed51ea78b9bddb7f1dffed4d0cf3f3820
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-static-r0-matched-seed11-step-033
+    revision: 8ff26afed51ea78b9bddb7f1dffed4d0cf3f3820
+  static_matched_step_036:
+    method: static
+    role: checkpoint
+    step: 36
+    served_model: static_matched_step_036
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-static-r0-matched-seed11-step-036@00453a922bac6aa81feeaf587a8f99fd3320ea5e
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-static-r0-matched-seed11-step-036
+    revision: 00453a922bac6aa81feeaf587a8f99fd3320ea5e
+  static_matched_step_039:
+    method: static
+    role: checkpoint
+    step: 39
+    served_model: static_matched_step_039
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-static-r0-matched-seed11-step-039@dfbbd7cb4ae23eada975978f5e6127f8f0f0f217
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-static-r0-matched-seed11-step-039
+    revision: dfbbd7cb4ae23eada975978f5e6127f8f0f0f217
+  static_matched_step_042:
+    method: static
+    role: final
+    step: 42
+    served_model: static_matched_step_042
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-static-r0-matched-seed11-step-042@cd10e187ed9944f9d8032899ca4d4f212d031c89
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-static-r0-matched-seed11-step-042
+    revision: cd10e187ed9944f9d8032899ca4d4f212d031c89
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+generation:
+  base_url: http://127.0.0.1:28141/v1
+  timeout_seconds: 600
+  max_retries: 4
+  max_output_tokens: 4096
+  workers: 64
+  max_in_flight: 64
+grading:
+  base_url:
+  - http://127.0.0.1:28144/v1
+  - http://127.0.0.1:28145/v1
+  - http://127.0.0.1:28146/v1
+  served_model: Qwen/Qwen3-32B
+  revision: 9216db5781bf21249d130ec9da846c4624c16137
+  timeout_seconds: 600
+  max_retries: 4
+  max_output_tokens: 1024
+  workers: 192
+  max_in_flight: 192
+  parse_retries: 2
+runtime:
+  policy_gpu: 1
+  policy_port: 28141
+  vllm: ''  # Required: set this machine's vLLM executable.
+  max_model_len: 32768
+  gpu_memory_utilization: 0.9
+  startup_timeout_seconds: 900
+  temporary_download_root: ''  # Required: set a writable temporary directory.
+  delete_download_after_generation: true

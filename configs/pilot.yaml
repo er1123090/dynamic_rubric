@@ -1,0 +1,112 @@
+experiment: dynamic_rubric_staleness_audit_pilot
+split_seed: 20250807
+bootstrap_seed: 20250807
+paths:
+  public_data: data/public
+  artifacts: artifacts
+  results: results
+models:
+  rubric_generator:
+    requested_model: gpt-5-mini
+    reasoning_effort: medium
+    prompt_version: rubric-generator-v1
+    schema: configs/schemas/rubric_generator_v1.json
+  hidden_gt_grader:
+    requested_model: gpt-5
+    reasoning_effort: medium
+    prompt_version: hidden-gold-grader-v1
+    schema: configs/schemas/hidden_gold_grader_v1.json
+  policy:
+    model: Qwen/Qwen3-4B-Instruct-2507
+    revision: cdbee75f17c01a7cc42f958dc650907174af0554
+    tokenizer_revision: cdbee75f17c01a7cc42f958dc650907174af0554
+    thinking: false
+  proxy_grader:
+    model: Qwen/Qwen3-32B
+    revision: 9216db5781bf21249d130ec9da846c4624c16137
+    tokenizer_revision: 9216db5781bf21249d130ec9da846c4624c16137
+    thinking: false
+    temperature: 0
+    scoring_mode: normalized_yes_no_target_loglikelihood
+  criterion_embedding:
+    model: BAAI/bge-m3
+    revision: 5617a9f61b028005a4858fdac845db406aefb181
+splits:
+  pilot_train: 256
+  pilot_probe: 48
+  pilot_audit: 96
+response_families:
+  static_candidate: 12
+  reference_discovery: 8
+  reference_validation: 4
+  trajectory_discovery: 4
+  trajectory_validation: 4
+  audit_bon: 64
+static_rubric:
+  generated_criteria: 6
+  universal_criteria: 2
+  total_criteria: 8
+  candidate_temperatures:
+    - temperature: 0.7
+      count: 6
+    - temperature: 1.1
+      count: 6
+  top_p: 0.95
+  thinking: false
+training:
+  max_steps: 100
+  train_batch_size: 48
+  rollout_n: 8
+  rollout_temperature: 1.0
+  rollout_top_p: 0.95
+  learning_rate: 1.0e-6
+  kl_loss_coef: 0.001
+  warmup_ratio: 0.1
+  max_prompt_length: 4096
+  max_response_length: 1536
+  checkpoint_steps: [0, 1, 2, 3, 5, 10, 20, 30, 50, 75, 100]
+  reward_source: static_r0_only
+  artifact_inputs: [artifacts/static]
+  parameterization: full
+probe:
+  timing: after_optimizer_update
+  development_samples_per_family: 4
+  final_samples_per_family: 4
+  sealed_final_path: artifacts/trajectory/final_sealed
+replay:
+  modes:
+    - static
+    - dynamic_fixed_budgeted
+    - dynamic_prev_budgeted
+    - refresh_only_budgeted
+    - dynamic_fixed_cumulative
+  max_candidates_per_step: 3
+  max_dynamic_slots: 4
+  satisfaction_min: 0.10
+  satisfaction_max: 0.90
+  separation_min: 0.15
+  max_similarity_exclusive: 0.85
+  parse_success_min: 0.95
+  independent_validation_required: true
+  replicate_fraction: 0.20
+bon:
+  focal_steps: [3, 10, 30, 100]
+  rubric_steps: [0, 3, 5, 10, 30, 100]
+  pool_size: 64
+  sizes: [1, 2, 4, 8, 16, 32, 64]
+  permutations: 5
+  tie_break: lowest_global_candidate_id
+bootstrap:
+  iterations: 10000
+  cluster: prompt_id
+  confidence: 0.95
+  equivalence_margin: 0.015
+  meaningful_difference: 0.03
+budget:
+  openai_request_ceiling: 250000
+  qwen_criterion_pair_ceiling: 50000000
+  gpu_hour_ceiling: 500
+execution:
+  mode: live
+  require_dependency_lock_ready: true
+

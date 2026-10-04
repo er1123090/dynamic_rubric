@@ -1,0 +1,314 @@
+schema_version: 1
+output_root: ../../outputs/policy_eval/medicine_checkpoint_trajectory_20260912
+seed: 11
+bootstrap_replicates: 10000
+healthbench_upstream:
+  repository: ../../environment/upstream/simple-evals
+  commit: 5e623c2b400af62a1278e23595f95b0853d7fe8a
+  source_path: healthbench_eval.py
+datasets:
+  rar_medicine_test:
+    kind: rar
+    path: ../../data/rar/medicine/eval300/final.jsonl
+    expected_count: 300
+    sha256: ff44df0f2e654924a43ae63559bb8ea06f5fb41badbebc4eb6390b0544f73d73
+  healthbench:
+    kind: healthbench
+    path: ../../data/source/healthbench_full_2025-05-07-06-14-12.jsonl
+    expected_count: 5000
+    sha256: e99dd3c6372c10d6fcc5e385c5fae69d0dd40392dae56836ef9493ae324ecd2f
+models:
+  static_base:
+    method: static
+    role: base
+    step: 0
+    served_model: static_base
+    artifact: Qwen/Qwen3-1.7B@70d244cc86ccca08cf5af4e1e306ecf908b1ad5e
+    repo_id: Qwen/Qwen3-1.7B
+    revision: 70d244cc86ccca08cf5af4e1e306ecf908b1ad5e
+  static_step_003:
+    method: static
+    role: checkpoint
+    step: 3
+    served_model: static_step_003
+    artifact: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-003@a3eb6e330b636db731cd439ea36007275411bdd7
+    repo_id: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-003
+    revision: a3eb6e330b636db731cd439ea36007275411bdd7
+  static_step_006:
+    method: static
+    role: checkpoint
+    step: 6
+    served_model: static_step_006
+    artifact: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-006@266729bd6842524867f5f9bc8b3ffd98d3f501e9
+    repo_id: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-006
+    revision: 266729bd6842524867f5f9bc8b3ffd98d3f501e9
+  static_step_009:
+    method: static
+    role: checkpoint
+    step: 9
+    served_model: static_step_009
+    artifact: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-009@391b1b73e4bf150d1cfe0d2c35f36000ce909dbb
+    repo_id: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-009
+    revision: 391b1b73e4bf150d1cfe0d2c35f36000ce909dbb
+  static_step_013:
+    method: static
+    role: checkpoint
+    step: 13
+    served_model: static_step_013
+    artifact: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-013@de30539fe807a4598a88b8b1f6a34d69e3ab02bc
+    repo_id: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-013
+    revision: de30539fe807a4598a88b8b1f6a34d69e3ab02bc
+  static_step_016:
+    method: static
+    role: checkpoint
+    step: 16
+    served_model: static_step_016
+    artifact: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-016@7215fe65c06fd19dc1c3a0020e2e46b6e7aa2354
+    repo_id: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-016
+    revision: 7215fe65c06fd19dc1c3a0020e2e46b6e7aa2354
+  static_step_024:
+    method: static
+    role: checkpoint
+    step: 24
+    served_model: static_step_024
+    artifact: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-024@934ff4b9233500c29dc371ec2b5405ea88b2df8f
+    repo_id: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-024
+    revision: 934ff4b9233500c29dc371ec2b5405ea88b2df8f
+  static_step_032:
+    method: static
+    role: checkpoint
+    step: 32
+    served_model: static_step_032
+    artifact: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-032@01ca379cb08371313776e5da34e1e18ba37a029e
+    repo_id: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-032
+    revision: 01ca379cb08371313776e5da34e1e18ba37a029e
+  static_step_040:
+    method: static
+    role: checkpoint
+    step: 40
+    served_model: static_step_040
+    artifact: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-040@f68499a4ddc99e9e956749b11a07d6fed9c6e622
+    repo_id: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-040
+    revision: f68499a4ddc99e9e956749b11a07d6fed9c6e622
+  static_final:
+    method: static
+    role: final
+    step: 48
+    served_model: static_final
+    artifact: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-048@b860b25c0b78c7854a4155aabc4bc3164435071d
+    repo_id: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-048
+    revision: b860b25c0b78c7854a4155aabc4bc3164435071d
+  online_base:
+    method: online
+    role: base
+    step: 0
+    served_model: online_base
+    artifact: Qwen/Qwen3-4B-Instruct-2507@cdbee75f17c01a7cc42f958dc650907174af0554
+    repo_id: Qwen/Qwen3-4B-Instruct-2507
+    revision: cdbee75f17c01a7cc42f958dc650907174af0554
+  online_step_003:
+    method: online
+    role: checkpoint
+    step: 3
+    served_model: online_step_003
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-003@5ef4227f9301af30677382215ceb594714a3582e
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-003
+    revision: 5ef4227f9301af30677382215ceb594714a3582e
+  online_step_006:
+    method: online
+    role: checkpoint
+    step: 6
+    served_model: online_step_006
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-006@a88a7494bf124344ee68ee57a7b79aa94b29297f
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-006
+    revision: a88a7494bf124344ee68ee57a7b79aa94b29297f
+  online_step_009:
+    method: online
+    role: checkpoint
+    step: 9
+    served_model: online_step_009
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-009@f9bf4a90d322137e919a23ed36621df70ea4b656
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-009
+    revision: f9bf4a90d322137e919a23ed36621df70ea4b656
+  online_step_012:
+    method: online
+    role: checkpoint
+    step: 12
+    served_model: online_step_012
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-012@457258d61e4c8f7df621b44bf96934b091d7cef0
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-012
+    revision: 457258d61e4c8f7df621b44bf96934b091d7cef0
+  online_step_013:
+    method: online
+    role: checkpoint
+    step: 13
+    served_model: online_step_013
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-013@89036adab90a949a60cd671d315b3b4adba9bd4d
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-013
+    revision: 89036adab90a949a60cd671d315b3b4adba9bd4d
+  online_step_015:
+    method: online
+    role: checkpoint
+    step: 15
+    served_model: online_step_015
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-015@617fe5d28f21824a5e6f05c8dbfec103f1822955
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-015
+    revision: 617fe5d28f21824a5e6f05c8dbfec103f1822955
+  online_step_016:
+    method: online
+    role: checkpoint
+    step: 16
+    served_model: online_step_016
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-016@5ffa4d3449d78ae7046da93f2188fb9665ac909f
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-016
+    revision: 5ffa4d3449d78ae7046da93f2188fb9665ac909f
+  online_step_018:
+    method: online
+    role: checkpoint
+    step: 18
+    served_model: online_step_018
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-018@dbb333272d18f7056de7f7ecc8a4b2bd5d4aa56c
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-018
+    revision: dbb333272d18f7056de7f7ecc8a4b2bd5d4aa56c
+  online_step_021:
+    method: online
+    role: checkpoint
+    step: 21
+    served_model: online_step_021
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-021@d2902ddeb811ce3f30cea029aaf2851dc9a42704
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-021
+    revision: d2902ddeb811ce3f30cea029aaf2851dc9a42704
+  online_step_024:
+    method: online
+    role: checkpoint
+    step: 24
+    served_model: online_step_024
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-024@49433196ffb81b17fb1f766143ec547f72dfac0a
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-024
+    revision: 49433196ffb81b17fb1f766143ec547f72dfac0a
+  online_step_027:
+    method: online
+    role: checkpoint
+    step: 27
+    served_model: online_step_027
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-027@512cad2889110dba7914b5e7d35e6552f9c1b004
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-027
+    revision: 512cad2889110dba7914b5e7d35e6552f9c1b004
+  online_step_030:
+    method: online
+    role: checkpoint
+    step: 30
+    served_model: online_step_030
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-030@9ad95eee13871bfd976cba6c1a82777c093c3d49
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-030
+    revision: 9ad95eee13871bfd976cba6c1a82777c093c3d49
+  online_step_032:
+    method: online
+    role: checkpoint
+    step: 32
+    served_model: online_step_032
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-032@0fcbe0bd07fee1c5841e265c85e53bc25cc07d6e
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-032
+    revision: 0fcbe0bd07fee1c5841e265c85e53bc25cc07d6e
+  online_step_033:
+    method: online
+    role: checkpoint
+    step: 33
+    served_model: online_step_033
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-033@7499cad57e7d319d51e1ff22e736eedd976a34d9
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-033
+    revision: 7499cad57e7d319d51e1ff22e736eedd976a34d9
+  online_step_034:
+    method: online
+    role: checkpoint
+    step: 34
+    served_model: online_step_034
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-034@27fe483a95b748cc52c27a94653ab24cf934552f
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-034
+    revision: 27fe483a95b748cc52c27a94653ab24cf934552f
+  online_step_036:
+    method: online
+    role: checkpoint
+    step: 36
+    served_model: online_step_036
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-036@a8803e09e4da97de714cfedfbe85efe509604786
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-036
+    revision: a8803e09e4da97de714cfedfbe85efe509604786
+  online_step_039:
+    method: online
+    role: checkpoint
+    step: 39
+    served_model: online_step_039
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-039@c323e9dad654b93b161955d93a0544ac18f01ccb
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-039
+    revision: c323e9dad654b93b161955d93a0544ac18f01ccb
+  online_step_040:
+    method: online
+    role: checkpoint
+    step: 40
+    served_model: online_step_040
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-040@f7e3dc9f497ef01f7e53a72ec41771e985650515
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-040
+    revision: f7e3dc9f497ef01f7e53a72ec41771e985650515
+  online_step_042:
+    method: online
+    role: checkpoint
+    step: 42
+    served_model: online_step_042
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-042@33efa35a34652554c22f6f7f2da77e2add5cde45
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-042
+    revision: 33efa35a34652554c22f6f7f2da77e2add5cde45
+  online_step_045:
+    method: online
+    role: checkpoint
+    step: 45
+    served_model: online_step_045
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-045@afb3b96a2f71ef8f021f5a567df31695b27cc6f8
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-045
+    revision: afb3b96a2f71ef8f021f5a567df31695b27cc6f8
+  online_final:
+    method: online
+    role: final
+    step: 48
+    served_model: online_final
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-048@ee47df34e2a07b9e175cba49d576bf09541f9528
+    repo_id: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-048
+    revision: ee47df34e2a07b9e175cba49d576bf09541f9528
+reuse_responses_from:
+- ../../outputs/policy_eval/medicine_final_base_inference_b_qwen32b_20260910/full-9001cceff3c624a3
+generation:
+  base_url: http://127.0.0.1:28131/v1
+  timeout_seconds: 600
+  max_retries: 4
+  max_output_tokens: 4096
+  workers: 64
+  max_in_flight: 64
+grading:
+  base_url:
+  - http://127.0.0.1:28134/v1
+  - http://127.0.0.1:28135/v1
+  - http://127.0.0.1:28138/v1
+  served_model: Qwen/Qwen3-32B
+  revision: 9216db5781bf21249d130ec9da846c4624c16137
+  timeout_seconds: 600
+  max_retries: 4
+  max_output_tokens: 1024
+  workers: 192
+  max_in_flight: 192
+  parse_retries: 2
+runtime:
+  policy_host: trainer
+  policy_gpu: 0
+  policy_port: 28131
+  vllm: ''  # Required: set this machine's vLLM executable.
+  max_model_len: 32768
+  gpu_memory_utilization: 0.9
+  one_checkpoint_at_a_time: true
+  temporary_download_root: ''  # Required: set a writable temporary directory.
+  delete_download_after_generation: true
+  judge_endpoints:
+  - inference_a-gpu0
+  - inference_a-gpu1
+  - inference_c-tp4
+reuse_grades_from:
+- ../../outputs/policy_eval/medicine_final_base_inference_b_qwen32b_20260910/full-9001cceff3c624a3

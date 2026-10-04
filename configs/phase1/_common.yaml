@@ -1,0 +1,119 @@
+schema_version: 1
+experiment: phase1_evaluator_update_value
+seed: 11
+
+data:
+  train_prompt_count: 1500
+  fixed_train_probe:
+    count: 100
+    sample_seed: 11
+    source: train
+    remains_in_training: true
+    extra_responses_used_for_gradient: false
+    manifest: outputs/{domain}/shared/seed-11/manifests/fixed_train_probe.json
+  in_domain_policy_eval:
+    count: 300
+    policy_only: true
+  external_policy_eval:
+    policy_only: true
+
+training:
+  algorithm: grpo
+  epochs: 3
+  global_prompt_batch: 96
+  expected_global_steps: 48
+  checkpoint_interval_steps: 1
+  checkpoint_retention:
+    latest_full_resume_state: true
+    older_parameter_snapshots: true
+    older_optimizer_state: false
+  audit_checkpoints: [0, 3, 6, 9, 13, 16, 24, 32, 40, 48]
+  reuse_anchors: [0, 9, 16, 32, 48]
+  probe_responses_used_for_gradient: false
+  per_step_logging:
+    - cumulative_prompt_exposures
+    - cumulative_completions
+    - cumulative_response_tokens
+    - adjacent_policy_kl
+    - cumulative_policy_kl_from_pi0
+    - response_length
+
+models:
+  policy:
+    model: Qwen/Qwen3-4B-Instruct-2507
+    revision: cdbee75f17c01a7cc42f958dc650907174af0554
+    thinking: false
+    backend: local_optimizer
+    local_snapshot: models/Qwen3-4B-Instruct-2507
+
+analysis:
+  primary_dataset: fixed_train_probe
+  same_response_pool_required: true
+  same_judge_within_method: true
+  heldout_used_for_update_timing: false
+  compare_cross_method_absolute_rewards: false
+  compare_cross_method_absolute_zar: false
+  use_response_level_ground_truth: false
+  use_initial_rubric_as_ground_truth: false
+  enable_bon: false
+  pool_a_b_disjoint: true
+  reuse_anchors: [0, 9, 16, 32, 48]
+  epsilon_z: 0.01
+  epsilon_t: 0.01
+  practical_margin_delta_d: 0.02
+  pre_update_state_fields:
+    - global_step
+    - evaluator_age_steps
+    - evaluator_age_checkpoints
+    - cumulative_prompts_since_evaluator
+    - cumulative_completions_since_evaluator
+    - cumulative_response_tokens_since_evaluator
+    - policy_kl_current_vs_evaluator
+    - cumulative_policy_kl_from_pi0
+    - response_length_shift
+    - stale_zar
+    - stale_pairwise_tie_rate
+    - stale_pairwise_separation_rate
+    - stale_effective_criterion_ratio
+    - stale_saturation_ratio
+    - stale_reward_std
+    - stale_top_median_margin
+
+infrastructure:
+  code_host: ''  # Optional metadata: set your training host label.
+  optimizer:
+    host: ''
+    gpus: [1]
+  services:
+    gpt_oss_120b:
+      host: ''
+      instances:
+        - gpus: [0, 1]
+          tensor_parallel_size: 2
+      tensor_parallel_size: 2
+      base_url_env: PHASE1_GPT_OSS_BASE_URLS
+    qwen3_32b:
+      hosts: ['']
+      instances:
+        - host: ''
+          gpus: [0, 1]
+          tensor_parallel_size: 2
+      base_url_env: PHASE1_QWEN32B_BASE_URLS
+  pi0_control:
+    host: ''
+    gpus: [1]
+    mode: precompute_before_optimizer
+    immutable_cache: true
+
+output:
+  root: outputs
+  layout: "{domain}/{method}/seed-{seed}/{run_id}"
+
+tracking:
+  project: phase1_dynamic_evaluator_updates
+  legacy_static_project: dynamic_rubric_static_grpo
+
+smoke:
+  prompt_count: 2
+  stale_checkpoint: 0
+  fresh_checkpoint: 3

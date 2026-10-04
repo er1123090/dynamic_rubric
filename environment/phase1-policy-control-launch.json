@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "served_model": "Qwen/Qwen3-4B-Instruct-2507",
+  "model_revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+  "tokenizer_revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+  "thinking": false,
+  "model_path": "models/Qwen3-4B-Instruct-2507",
+  "checkpoint_hash": "0d4e207e73f80935be04a13a57819764d0c4b6913675c2b53243b9ef10527c4c",
+  "physical_gpu": 1,
+  "gpu_memory_utilization": 0.90,
+  "max_model_len": 8192,
+  "max_num_seqs": 128,
+  "max_num_batched_tokens": 32768,
+  "identity_source": "operator-recorded-vllm-launch"
+}

@@ -1,0 +1,16 @@
+extends:
+  - _common.yaml
+  - _evorubrics.yaml
+domain: science
+method: evorubrics
+
+data:
+  train_path: data/rar/science/public/train.jsonl
+  in_domain_policy_eval:
+    path: data/rar/science/public/final.jsonl
+  external_policy_eval:
+    name: GPQA-Diamond
+    path: data/external/gpqa_diamond/prompts.jsonl
+
+tracking:
+  group: science_evorubrics_phase1

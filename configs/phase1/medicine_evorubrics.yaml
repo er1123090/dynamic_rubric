@@ -1,0 +1,16 @@
+extends:
+  - _common.yaml
+  - _evorubrics.yaml
+domain: medicine
+method: evorubrics
+
+data:
+  train_path: data/rar/medicine/eval300/train.jsonl
+  in_domain_policy_eval:
+    path: data/rar/medicine/eval300/final.jsonl
+  external_policy_eval:
+    name: HealthBench
+    path: data/external/healthbench/prompts.jsonl
+
+tracking:
+  group: medicine_evorubrics_phase1

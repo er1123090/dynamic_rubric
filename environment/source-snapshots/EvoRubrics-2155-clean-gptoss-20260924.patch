@@ -1,0 +1,76 @@
+--- EvoRubrics-2155/evorubric-main/llm_evaluator.py
++++ EvoRubrics-2155-clean/evorubric-main/llm_evaluator.py
+@@ -204,11 +204,23 @@
+         self.max_concurrent_fallback = max(
+             1, int(os.getenv("LLM_EVALUATOR_MAX_CONCURRENT_FALLBACK", "64"))
+         )
++        self.request_timeout_seconds = float(
++            os.getenv("LLM_EVALUATOR_TIMEOUT_SECONDS", "120")
++        )
++        if self.request_timeout_seconds <= 0:
++            raise ValueError("LLM_EVALUATOR_TIMEOUT_SECONDS must be positive")
++        self.default_max_completion_tokens = int(
++            os.getenv("LLM_EVALUATOR_MAX_COMPLETION_TOKENS", "0")
++        )
++        if self.default_max_completion_tokens < 0:
++            raise ValueError(
++                "LLM_EVALUATOR_MAX_COMPLETION_TOKENS must be zero or positive"
++            )
+         
+         self.client = OpenAI(
+             api_key=self.api_key,
+             base_url=self.base_url,
+-            timeout=120.0,
++            timeout=self.request_timeout_seconds,
+         )
+         
+         logger.info("Initialized %s evaluator", self.evaluator_type.upper())
+@@ -234,10 +246,13 @@
+                     "messages": messages,
+                     "temperature": 0.0,
+                 }
+-                if max_completion_tokens is not None:
+-                    n = int(max_completion_tokens)
+-                    if n > 0:
+-                        api_kwargs["max_tokens"] = n
++                n = (
++                    self.default_max_completion_tokens
++                    if max_completion_tokens is None
++                    else int(max_completion_tokens)
++                )
++                if n > 0:
++                    api_kwargs["max_tokens"] = n
+                 
+                 # Model name when required by backend
+                 if self.use_model_param and self.model:
+--- EvoRubrics-2155/evorubric-main/shared_base_trainer.py
++++ EvoRubrics-2155-clean/evorubric-main/shared_base_trainer.py
+@@ -337,6 +337,9 @@
+         
+         skip_epochs = resume_step // num_batches_per_epoch if num_batches_per_epoch > 0 else 0
+         skip_batches_in_current_epoch = resume_step % num_batches_per_epoch if num_batches_per_epoch > 0 else 0
++
++        if resume_step == 0:
++            self._save_checkpoints(config, epoch=-1)
+         
+         # ==========================================================
+         # ==========================================================
+@@ -453,13 +456,13 @@
+                 logger.log(data=metrics, step=self.global_steps)
+                 
+                 self._log_to_swanlab(metrics)
+-                
+-                if self.global_steps % save_lora_freq == 0 and self.global_steps > 0:
+-                    self._save_checkpoints(config, epoch)
+-                
++
+                 self.global_steps += 1
+                 progress_bar.update(1)
+-                
++
++                if self.global_steps % save_lora_freq == 0:
++                    self._save_checkpoints(config, epoch)
++
+                 if eval_enabled and eval_freq > 0 and self.global_steps % eval_freq == 0:
+                     print("[message omitted]")
+                     self._run_evaluation(config, step=self.global_steps)

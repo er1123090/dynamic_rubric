@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "status": "stage5_local_gate_passed_pending_openai_static_smoke",
+  "python": "3.10",
+  "hardware": {
+    "gpu_count": 2,
+    "gpu_model": "NVIDIA H200 NVL",
+    "memory_mib_each": 143771,
+    "compute_capability": "9.0",
+    "driver": "575.64.03"
+  },
+  "cuda": "12.9",
+  "pytorch": "2.11.0+cu129",
+  "vllm": "0.20.1",
+  "transformers": "5.14.1",
+  "verl": {
+    "repository": "https://github.com/verl-project/verl",
+    "commit": "890dfc3ebdd5647f7ea9730375414b1e3fb4e9a6",
+    "checkout": "environment/upstream/verl",
+    "focal_checkpoint_retention_verified": true,
+    "stage5_patch_sha256": "58e056219e6370052b9337ef80e1ff1168ecd0a2cc52aec7ce81ed1ba4d444f5",
+    "online_patch_sha256": "38826975a0d3b0b71ee5bb8c4c2d2b55c186caa206f436989225ed865ae21e94"
+  },
+  "healthbench": {
+    "repository": "https://github.com/openai/simple-evals",
+    "commit": "652c89d0ca9df547706735883097e9537d40dc47",
+    "dataset_repository": "openai/healthbench",
+    "dataset_revision": "40ee1968852fc57f625934251ac22be47077a8fb",
+    "source_file": "data/source/consensus_2025-05-09-20-00-46.jsonl",
+    "source_sha256": "fabe37553327238928b05357d8b309737b5d426d6dee432a3376da618d0969d6",
+    "license": "MIT"
+  },
+  "models": {
+    "policy": {
+      "id": "Qwen/Qwen3-4B-Instruct-2507",
+      "revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+      "tokenizer_revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+      "stage4_launch_spec": "environment/policy-stage4-launch.json",
+      "stage4_launch_spec_sha256": "65b07745787b72e411d4b8e5845dadfafc44f1c53a44a6c42afd69110b947a6a"
+    },
+    "horizon_policy": {
+      "id": "Qwen/Qwen3-1.7B",
+      "revision": "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+      "tokenizer_revision": "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+      "local_snapshot": "models/Qwen3-1.7B",
+      "launch_spec": "environment/policy-horizon-launch.json"
+    },
+    "proxy_grader": {
+      "id": "Qwen/Qwen3-32B",
+      "revision": "9216db5781bf21249d130ec9da846c4624c16137",
+      "tokenizer_revision": "9216db5781bf21249d130ec9da846c4624c16137",
+      "local_snapshot": "models/Qwen3-32B"
+    },
+    "embedding": {"id": "BAAI/bge-m3", "revision": "5617a9f61b028005a4858fdac845db406aefb181"}
+  },
+  "smokes": {
+    "openai_static_rubric": {
+      "status": "pending",
+      "reason": "A newly rotated OPENAI_API_KEY is not present in the process environment."
+    },
+    "openai_dynamic_extraction": {
+      "status": "pending",
+      "reason": "Outside the requested Stage 4/5 execution boundary."
+    },
+    "proxy_grader_ten_pairs": {
+      "status": "passed",
+      "artifact": "artifacts/smoke/proxy-grader-ten-pairs.json",
+      "criterion_pair_probe_count": 10,
+      "parse_success": 1.0
+    },
+    "hidden_gt_calibration": {
+      "status": "pending",
+      "reason": "Outside the requested Stage 4/5 execution boundary."
+    },
+    "policy_one_step_probe": {
+      "status": "passed",
+      "artifact": "artifacts/smoke/kl-export-one-step-v5",
+      "rollout_n": 2,
+      "distinct_outputs": 8,
+      "nonzero_gradient": true,
+      "probe_records": 1152,
+      "finite_kl_records": 1152
+    },
+    "checkpoint_resume_retention": {
+      "status": "passed",
+      "artifact": "artifacts/smoke/paired-valid-update-gate.json",
+      "focal_checkpoint_retention": true,
+      "probe_observational_equivalence": true,
+      "full_probe_records_per_step": 1152,
+      "finite_kl_records": 3456
+    },
+    "embedding_gpu1_co_residency": {
+      "status": "passed",
+      "artifact": "artifacts/smoke/bge-gpu1-co-residency.json",
+      "physical_gpu": 1,
+      "dimension": 1024
+    }
+  },
+  "live_gate": {
+    "ready": false,
+    "ready_stages": [],
+    "locally_validated_stages": ["train-static"],
+    "reason": "Stage 5 GPU/reward/checkpoint gates passed. A secure rotated OpenAI key and the openai_static_rubric smoke are still required before Stage 4/5 can receive a bound live receipt."
+  }
+}

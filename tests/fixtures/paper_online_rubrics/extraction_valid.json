@@ -1,0 +1,10 @@
+{
+  "analysis": "Response A explains scattering while Response B makes an unsupported claim.",
+  "new_criteria": [
+    {
+      "quote": "Blue light is scattered more strongly",
+      "criterion": "Explain the role of atmospheric scattering",
+      "weight": 2
+    }
+  ]
+}

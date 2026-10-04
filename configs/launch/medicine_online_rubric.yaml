@@ -1,0 +1,238 @@
+# Medicine OnlineRubrics. Common sections match the Static and Evo recipes.
+# Edit launch.run_id for a new run. Set launch.tuning_mode: custom to change
+# the training values below. Hardware and paths are configurable in both modes.
+schema_version: 1
+experiment: phase1_evaluator_update_value
+domain: medicine
+method: online_rubrics
+seed: 11
+data:
+  train_prompt_count: 1500
+  fixed_train_probe:
+    count: 100
+    sample_seed: 11
+    source: train
+    remains_in_training: true
+    extra_responses_used_for_gradient: false
+    manifest: outputs/{domain}/shared/seed-11/manifests/fixed_train_probe.json
+  in_domain_policy_eval:
+    count: 300
+    policy_only: true
+    path: data/rar/medicine/eval300/final.jsonl
+  external_policy_eval:
+    policy_only: true
+    name: HealthBench
+    path: data/external/healthbench/prompts.jsonl
+  train_path: data/rar/medicine/eval300/train.jsonl
+models:
+  policy:
+    model: Qwen/Qwen3-4B-Instruct-2507
+    revision: cdbee75f17c01a7cc42f958dc650907174af0554
+    thinking: false
+    backend: local_optimizer
+    local_snapshot: models/Qwen3-4B-Instruct-2507
+  extractor:
+    local_snapshot: models/gpt-oss-120b
+    model: openai/gpt-oss-120b
+    revision: main
+    thinking: false
+    backend: remote_vllm
+    base_url_env: PHASE1_GPT_OSS_BASE_URL
+    max_output_tokens: 8192
+  deduplicator:
+    model: openai/gpt-oss-120b
+    revision: main
+    thinking: false
+    backend: remote_vllm
+    base_url_env: PHASE1_GPT_OSS_BASE_URL
+    max_output_tokens: 8192
+  judge:
+    local_snapshot: models/Qwen3-32B
+    model: Qwen/Qwen3-32B
+    revision: 9216db5781bf21249d130ec9da846c4624c16137
+    thinking: false
+    backend: remote_vllm
+    base_url_env: PHASE1_QWEN32B_BASE_URL
+    max_output_tokens: 4096
+# paper keeps reproduction defaults; custom permits the validated training knobs below.
+training:
+  algorithm: grpo
+  epochs: 3
+  global_prompt_batch: 96
+  expected_global_steps: 48
+  checkpoint_interval_steps: 1
+  checkpoint_retention:
+    latest_full_resume_state: true
+    older_parameter_snapshots: true
+    older_optimizer_state: false
+  # Editable in custom mode; paper mode requires reproduction defaults.
+  ppo_mini_batch_size: 96
+  max_prompt_length: 4096
+  max_response_length: 3584
+  rollout_tensor_parallel_size: 1
+  learning_rate: 5.0e-6
+  warmup_ratio: 0.1
+  kl_coefficient: 0.01
+  rollout_temperature: 1.0
+  rollout_top_p: 0.95
+  audit_checkpoints:
+    - 0
+    - 3
+    - 6
+    - 9
+    - 13
+    - 16
+    - 24
+    - 32
+    - 40
+    - 48
+  reuse_anchors:
+    - 0
+    - 9
+    - 16
+    - 32
+    - 48
+  probe_responses_used_for_gradient: false
+  per_step_logging:
+    - cumulative_prompt_exposures
+    - cumulative_completions
+    - cumulative_response_tokens
+    - adjacent_policy_kl
+    - cumulative_policy_kl_from_pi0
+    - response_length
+infrastructure:
+  code_host: ''  # Optional metadata: set your training host label.
+  optimizer:
+    host: ''
+    gpus:
+      - 1
+  services:
+    gpt_oss_120b:
+      host: ''
+      instances:
+        - host: ''
+          gpus: [0, 1]
+          tensor_parallel_size: 2
+          vllm_bin: .venvs/judge/bin/vllm
+          python: .venvs/judge/bin/python
+          bind_host: 127.0.0.1
+          port: 28011
+          gpu_memory_utilization: 0.48
+          max_model_len: 32768
+          max_num_seqs: 16
+          max_num_batched_tokens: 2048
+          dtype: auto
+      tensor_parallel_size: 2
+      base_url_env: PHASE1_GPT_OSS_BASE_URLS
+    qwen3_32b:
+      hosts:
+        - ''
+      instances:
+        - host: ''
+          gpus: [0, 1]
+          tensor_parallel_size: 2
+          vllm_bin: .venvs/judge/bin/vllm
+          python: .venvs/judge/bin/python
+          bind_host: 127.0.0.1
+          port: 28014
+          gpu_memory_utilization: 0.46
+          max_model_len: 32768
+          max_num_seqs: 16
+          max_num_batched_tokens: 2048
+          dtype: bfloat16
+      base_url_env: PHASE1_QWEN32B_BASE_URLS
+  pi0_control:
+    host: ''
+    gpus:
+      - 1
+    tensor_parallel_size: 1
+    vllm_bin: .venvs/judge/bin/vllm
+    runtime_python: .venvs/judge/bin/python
+    gpu_memory_utilization: 0.45
+    max_model_len: 7680
+    max_num_seqs: 64
+    max_num_batched_tokens: 16384
+    upstream_port: 28101
+    proxy_port: 28102
+    concurrency: 16
+    progress_every: 25
+    free_memory_threshold_mib: 1024
+    mode: precompute_before_optimizer
+    immutable_cache: true
+output:
+  root: outputs
+  layout: '{domain}/{method}/seed-{seed}/{run_id}'
+tracking:
+  project: phase1_dynamic_evaluator_updates
+  legacy_static_project: dynamic_rubric_static_grpo
+  group: medicine_online_rubrics_phase1
+# Runtime knobs: edit these values for the next run; no servers are started here.
+launch:
+  entry_python: .venvs/verl/bin/python
+  run_id: phase1-online-rubrics-medicine-full-run001
+  tuning_mode: paper
+  environment:
+    RUNTIME_PYTHON: .venvs/verl/bin/python
+    PHASE1_GPT_OSS_BASE_URLS: http://127.0.0.1:28011
+    PHASE1_QWEN32B_BASE_URLS: http://127.0.0.1:28014
+    PHASE1_QWEN32B_EXPECTED_COUNT: '1'
+    ONLINE_CONTROL_CACHE_DIR: outputs/medicine/shared/seed-11/pi0_control_cache
+    ONLINE_EXTRACTOR_CONCURRENCY: '48'
+    ONLINE_GRADER_CONCURRENCY: '64'
+    ONLINE_LOGPROB_PREFETCH: 'true'
+    PYTHONUNBUFFERED: '1'
+online_rubrics:
+  policy_responses_per_prompt: 16
+  elicitation_pairs_per_prompt: 8
+  control_policy: pi_0_fixed
+  control_cache: precomputed_immutable
+  augmentation: step_local
+  accumulate_previous_criteria: false
+  fresh_reward_used_for_training: true
+  stale_shadow_only: true
+  stale_lookup_key: prompt_id
+  require_prompt_match: true
+  pool_a_current_count: 8
+  pool_a_pi0_count: 8
+  pool_b_count: 16
+analysis:
+  primary_dataset: fixed_train_probe
+  same_response_pool_required: true
+  same_judge_within_method: true
+  heldout_used_for_update_timing: false
+  compare_cross_method_absolute_rewards: false
+  compare_cross_method_absolute_zar: false
+  use_response_level_ground_truth: false
+  use_initial_rubric_as_ground_truth: false
+  enable_bon: false
+  pool_a_b_disjoint: true
+  reuse_anchors:
+    - 0
+    - 9
+    - 16
+    - 32
+    - 48
+  epsilon_z: 0.01
+  epsilon_t: 0.01
+  practical_margin_delta_d: 0.02
+  pre_update_state_fields:
+    - global_step
+    - evaluator_age_steps
+    - evaluator_age_checkpoints
+    - cumulative_prompts_since_evaluator
+    - cumulative_completions_since_evaluator
+    - cumulative_response_tokens_since_evaluator
+    - policy_kl_current_vs_evaluator
+    - cumulative_policy_kl_from_pi0
+    - response_length_shift
+    - stale_zar
+    - stale_pairwise_tie_rate
+    - stale_pairwise_separation_rate
+    - stale_effective_criterion_ratio
+    - stale_saturation_ratio
+    - stale_reward_std
+    - stale_top_median_margin
+smoke:
+  prompt_count: 2
+  stale_checkpoint: 0
+  fresh_checkpoint: 3

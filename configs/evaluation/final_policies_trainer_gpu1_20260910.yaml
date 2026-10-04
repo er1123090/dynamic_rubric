@@ -1,0 +1,68 @@
+schema_version: 1
+output_root: ../../outputs/policy_eval/medicine_final_base_qwen32b_20260910
+seed: 11
+bootstrap_replicates: 10000
+healthbench_upstream:
+  repository: ../../environment/upstream/simple-evals
+  commit: 5e623c2b400af62a1278e23595f95b0853d7fe8a
+  source_path: healthbench_eval.py
+datasets:
+  rar_medicine:
+    kind: rar
+    path: ../../data/rar/medicine/eval300/final.jsonl
+    expected_count: 300
+    sha256: ff44df0f2e654924a43ae63559bb8ea06f5fb41badbebc4eb6390b0544f73d73
+  healthbench:
+    kind: healthbench
+    path: ../../data/source/healthbench_full_2025-05-07-06-14-12.jsonl
+    expected_count: 5000
+    sha256: e99dd3c6372c10d6fcc5e385c5fae69d0dd40392dae56836ef9493ae324ecd2f
+models:
+  static_base:
+    method: static
+    role: base
+    served_model: static_base
+    artifact: Qwen/Qwen3-1.7B@70d244cc86ccca08cf5af4e1e306ecf908b1ad5e
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  static_final:
+    method: static
+    role: final
+    served_model: static_final
+    artifact: HYU-NLP-EVAL/qwen3-1.7b-rar-medicine-static-r0-step-048@b860b25c0b78c7854a4155aabc4bc3164435071d
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_base:
+    method: online
+    role: base
+    served_model: online_base
+    artifact: Qwen/Qwen3-4B-Instruct-2507@cdbee75f17c01a7cc42f958dc650907174af0554
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_final:
+    method: online
+    role: final
+    served_model: online_final
+    artifact: HYU-NLP-EVAL/qwen3-4b-rar-medicine-onlinerubrics-seed11-step-048@ee47df34e2a07b9e175cba49d576bf09541f9528
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+generation:
+  base_url: http://127.0.0.1:28131/v1
+  timeout_seconds: 600
+  max_retries: 4
+  max_output_tokens: 4096
+  workers: 32
+  max_in_flight: 32
+grading:
+  base_url: http://127.0.0.1:28132/v1
+  served_model: Qwen/Qwen3-32B
+  revision: 9216db5781bf21249d130ec9da846c4624c16137
+  local_path: ''  # Required: set this machine's model/checkpoint path.
+  timeout_seconds: 600
+  max_retries: 4
+  max_output_tokens: 1024
+  workers: 32
+  max_in_flight: 32
+runtime:
+  hostname: trainer
+  gpu: 1
+  vllm: ''  # Required: set this machine's vLLM executable.
+  max_model_len: 32768
+  gpu_memory_utilization: 0.90
+  stop_external_processes: false

@@ -1,0 +1,479 @@
+--- a/evorubric-main/adversarial_dataset.py
++++ b/evorubric-main/adversarial_dataset.py
+@@ -5,9 +5,8 @@
+ - open_rubrics: each sample only carries instruction/query; rubrics are generated on the fly.
+ """
+ import json
+-from typing import Dict, Any, Optional, List
++from typing import Dict, Any, List
+ from torch.utils.data import Dataset
+-from verl import DataProto
+ 
+ from models import (
+     POLICY_LLM_SYSTEM_PROMPT,
+@@ -105,7 +104,7 @@
+                 messages,
+                 tokenize=False,
+                 add_generation_prompt=True,
+-                extra_body={"enable_thinking": False}
++                enable_thinking=False
+             )
+ 
+         return self._build_prompt_manually(messages)
+@@ -146,7 +145,6 @@
+     
+     def __getitem__(self, idx: int) -> Dict[str, Any]:
+         """English docstring."""
+-        import torch
+         from verl.utils.model import compute_position_id_with_mask
+         
+         sample = self.samples[idx]
+@@ -162,7 +160,7 @@
+                 messages,
+                 tokenize=False,
+                 add_generation_prompt=True,
+-                extra_body={"enable_thinking": False}
++                enable_thinking=False
+             )
+         else:
+             prompt = self._build_prompt_manually(messages)
+@@ -200,6 +198,9 @@
+             'attention_mask': attention_mask,
+             'position_ids': position_ids,
+             'data_source': sample.get('data_source', 'healthbench'),
++            'prompt_id': sample.get('prompt_id', ''),
++            'prompt_hash': sample.get('prompt_hash', ''),
++            'source_index': sample.get('source_index', idx),
+             'prompt': prompt,
+             'ground_truth_rubrics': ground_truth_rubrics,
+             'golden_answer': golden_answer,
+--- a/evorubric-main/dual_lora_worker.py
++++ b/evorubric-main/dual_lora_worker.py
+@@ -5,6 +5,7 @@
+ import json
+ import logging
+ import os
++import random
+ import warnings
+ from collections import OrderedDict
+ from dataclasses import asdict
+@@ -90,6 +91,13 @@
+             )
+         
+         world_size = torch.distributed.get_world_size()
++        worker_seed = int(self.config.rollout.get("seed", 0)) + torch.distributed.get_rank()
++        random.seed(worker_seed)
++        np.random.seed(worker_seed)
++        torch.manual_seed(worker_seed)
++        if torch.cuda.is_available():
++            torch.cuda.manual_seed_all(worker_seed)
++        self.worker_seed = worker_seed
+         self.device_mesh = create_device_mesh(
+             world_size=world_size, 
+             fsdp_size=self.config.actor.fsdp_config.fsdp_size
+@@ -885,7 +893,7 @@
+         
+         self.torch_random_states = get_torch_device().get_rng_state()
+         gen_dp_rank = rollout_device_mesh["dp"].get_local_rank()
+-        get_torch_device().manual_seed(gen_dp_rank + 1000)
++        get_torch_device().manual_seed(self.worker_seed + gen_dp_rank)
+         self.gen_random_states = get_torch_device().get_rng_state()
+         get_torch_device().set_rng_state(self.torch_random_states)
+         
+@@ -1738,10 +1746,27 @@
+                 print("[message omitted]")
+                 return DataProto(meta_info={"metrics": {}})
+             
++            configured_mini_batch_size = int(self.actor.config.ppo_mini_batch_size)
++            effective_mini_batch_size = min(configured_mini_batch_size, data_batch_size)
++            micro_batch_size = self.actor.config.ppo_micro_batch_size_per_gpu
++            if (
++                not self.actor.config.use_dynamic_bsz
++                and micro_batch_size is not None
++                and effective_mini_batch_size % int(micro_batch_size) != 0
++            ):
++                raise ValueError(
++                    "Effective PPO mini batch must be divisible by the micro batch: "
++                    f"effective={effective_mini_batch_size}, micro={micro_batch_size}"
++                )
++            self.actor.config.ppo_mini_batch_size = effective_mini_batch_size
++
+             if self._is_offload_param and current_optimizer is not None:
+                 self._sync_optimizer_state_device(current_optimizer)
+             
+-            output = self.actor.update_policy(data=data)
++            try:
++                output = self.actor.update_policy(data=data)
++            finally:
++                self.actor.config.ppo_mini_batch_size = configured_mini_batch_size
+             if isinstance(output, dict):
+                 output = DataProto(meta_info={"metrics": output})
+         
+@@ -2020,6 +2045,12 @@
+                     optimizer_state = {
+                         "optimizer_state_dict": optimizer.state_dict(),
+                         "scheduler_state_dict": scheduler.state_dict() if scheduler else None,
++                        "rng_state": {
++                            "python": random.getstate(),
++                            "numpy": np.random.get_state(),
++                            "torch": torch.get_rng_state(),
++                            "cuda": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else [],
++                        },
+                     }
+                     torch.save(optimizer_state, os.path.join(optimizer_save_path, "optimizer_state.pt"))
+                     print(f"[DualLoRA] Saved optimizer state for {adapter_name} to: {optimizer_save_path}")
+@@ -2032,7 +2063,7 @@
+             print(f"[DualLoRA] Saved adapter {adapter_name} to: {lora_save_path}")
+     
+     @register(dispatch_mode=Dispatch.ONE_TO_ALL)
+-    def load_optimizer_checkpoint(self, local_path: str, adapter_name: str = None):
++    def load_optimizer_checkpoint(self, local_path: str, adapter_name: str = None, strict: bool = False):
+         """English docstring."""
+         if adapter_name is None:
+             adapter_name = self.current_adapter
+@@ -2040,6 +2071,8 @@
+         optimizer_load_path = os.path.join(local_path, f"optimizer_{adapter_name}", "optimizer_state.pt")
+         
+         if not os.path.exists(optimizer_load_path):
++            if strict:
++                raise FileNotFoundError(optimizer_load_path)
+             if self.rank == 0:
+                 print(f"[DualLoRA] No optimizer checkpoint found at: {optimizer_load_path}")
+             return
+@@ -2052,14 +2085,27 @@
+                 optimizer = self.rubrics_optimizer
+                 scheduler = self.rubrics_lr_scheduler
+             
++            if strict and optimizer is None:
++                raise RuntimeError(f"No optimizer available for {adapter_name}")
+             if optimizer is not None:
+-                checkpoint = torch.load(optimizer_load_path, map_location="cpu")
++                checkpoint = torch.load(
++                    optimizer_load_path, map_location="cpu", weights_only=False
++                )
+                 optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+                 if scheduler is not None and checkpoint.get("scheduler_state_dict"):
+                     scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
++                rng_state = checkpoint.get("rng_state")
++                if rng_state:
++                    random.setstate(rng_state["python"])
++                    np.random.set_state(rng_state["numpy"])
++                    torch.set_rng_state(rng_state["torch"])
++                    if torch.cuda.is_available() and rng_state.get("cuda"):
++                        torch.cuda.set_rng_state_all(rng_state["cuda"])
+                 
+                 if self.rank == 0:
+                     print(f"[DualLoRA] Loaded optimizer state for {adapter_name} from: {optimizer_load_path}")
+         except Exception as e:
++            if strict:
++                raise RuntimeError(f"Failed to restore optimizer {adapter_name}") from e
+             if self.rank == 0:
+                 print(f"[DualLoRA] Load optimizer {adapter_name} error: {e}")
+--- a/evorubric-main/reward_calculator.py
++++ b/evorubric-main/reward_calculator.py
+@@ -900,7 +900,9 @@
+ 
+ def batch_calculate_diversity_rewards(
+     rubrics_list: List[str],
+-    embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
++    embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
++    *,
++    raise_on_error: bool = False,
+ ) -> List[float]:
+     """English docstring."""
+     if not rubrics_list:
+@@ -1001,6 +1003,8 @@
+         logger.error("[log message omitted]")
+         import traceback
+         logger.error(traceback.format_exc())
++        if raise_on_error:
++            raise RuntimeError("MiniLM diversity scoring failed") from e
+         return [0.0] * len(rubrics_list)
+ 
+ 
+--- a/evorubric-main/shared_base_trainer.py
++++ b/evorubric-main/shared_base_trainer.py
+@@ -1,6 +1,7 @@
+ """Shared-base dual-LoRA adversarial trainer for EvoRubrics."""
+ import os
+ import json
++import importlib
+ import socket
+ import sys
+ import time
+@@ -100,6 +101,55 @@
+         self._pending_best_responses = None
+         self._policy_accum_batches: List[DataProto] = []
+         self._rubrics_accum_batches: List[DataProto] = []
++        self._rq2_observer = None
++
++    def _rq2_config(self):
++        """Return the optional RQ2 observer configuration."""
++        if self.config is None:
++            return {}
++        cfg = self.config.get("rq2", {})
++        return cfg if cfg is not None else {}
++
++    def _rq2_enabled(self) -> bool:
++        cfg = self._rq2_config()
++        return bool(cfg.get("enabled", False)) if hasattr(cfg, "get") else False
++
++    def _emit_rq2(self, hook_name: str, *args) -> None:
++        """Call an opt-in external observer without changing EvoRubrics rewards."""
++        if not self._rq2_enabled():
++            return
++        if self._rq2_observer is None:
++            cfg = self._rq2_config()
++            module_name = cfg.get(
++                "observer_module", "dynamic_rubric.phase1.evorubrics_observer"
++            )
++            self._rq2_observer = importlib.import_module(str(module_name))
++        hook = getattr(self._rq2_observer, hook_name, None)
++        if hook is None:
++            raise AttributeError(
++                f"RQ2 observer {self._rq2_observer.__name__!r} has no {hook_name} hook"
++            )
++        hook(self, *args)
++
++    def _response_token_counts(self, output: DataProto) -> List[int]:
++        """Count non-padding rollout tokens for RQ2 accounting."""
++        if output is None or output.batch is None or "responses" not in output.batch:
++            return []
++        responses = output.batch["responses"]
++        pad_token_id = getattr(self.tokenizer, "pad_token_id", None)
++        if pad_token_id is None:
++            return [int(responses.shape[-1])] * int(responses.shape[0])
++        return [int(x) for x in (responses != pad_token_id).sum(dim=-1).cpu().tolist()]
++
++    @staticmethod
++    def _batch_values(batch: DataProto, key: str) -> List[Any]:
++        """Return a non-tensor batch field as a plain list."""
++        if batch.non_tensor_batch is None or key not in batch.non_tensor_batch:
++            return []
++        values = batch.non_tensor_batch[key]
++        if isinstance(values, np.ndarray):
++            return values.tolist()
++        return list(values)
+ 
+     def _exemplar_trick_enabled(self, config) -> bool:
+         adv = getattr(config, "adversarial", None) or {}
+@@ -292,12 +342,12 @@
+             if policy_lora_path:
+                 policy_step_dir = os.path.dirname(policy_lora_path)
+                 print("[message omitted]")
+-                self.actor_rollout_wg.load_optimizer_checkpoint(policy_step_dir, POLICY_LLM_ADAPTER)
++                self.actor_rollout_wg.load_optimizer_checkpoint(policy_step_dir, POLICY_LLM_ADAPTER, strict=self._rq2_enabled())
+             
+             if rubrics_lora_path:
+                 rubrics_step_dir = os.path.dirname(rubrics_lora_path)
+                 print("[message omitted]")
+-                self.actor_rollout_wg.load_optimizer_checkpoint(rubrics_step_dir, RUBRICS_GEN_ADAPTER)
++                self.actor_rollout_wg.load_optimizer_checkpoint(rubrics_step_dir, RUBRICS_GEN_ADAPTER, strict=self._rq2_enabled())
+         
+         num_rubrics = config.data.get("num_rubrics", 4)
+         num_answers = config.data.get("num_answers", 4)
+@@ -337,6 +387,9 @@
+         
+         skip_epochs = resume_step // num_batches_per_epoch if num_batches_per_epoch > 0 else 0
+         skip_batches_in_current_epoch = resume_step % num_batches_per_epoch if num_batches_per_epoch > 0 else 0
++
++        if resume_step == 0:
++            self._save_checkpoints(config, epoch=-1)
+         
+         # ==========================================================
+         # ==========================================================
+@@ -454,11 +507,12 @@
+                 
+                 self._log_to_swanlab(metrics)
+                 
+-                if self.global_steps % save_lora_freq == 0 and self.global_steps > 0:
++                self.global_steps += 1
++                self._emit_rq2("on_step", metrics, original_batch_dict)
++                progress_bar.update(1)
++
++                if self.global_steps % save_lora_freq == 0:
+                     self._save_checkpoints(config, epoch)
+-                
+-                self.global_steps += 1
+-                progress_bar.update(1)
+                 
+                 if eval_enabled and eval_freq > 0 and self.global_steps % eval_freq == 0:
+                     print("[message omitted]")
+@@ -889,6 +943,10 @@
+         score_norm_sums: List[List[Tuple[float, float]]] = [
+             [(0.0, 0.0) for _ in range(num_rubrics)] for _ in range(batch_size)
+         ]
++        grade_details = (
++            [[None for _ in range(num_rubrics)] for _ in range(batch_size)]
++            if self._rq2_enabled() else None
++        )
+ 
+         eval_tasks = []
+         for q_idx in range(batch_size):
+@@ -926,6 +984,7 @@
+         reflect_enabled_this_step = reflect_enabled and should_update_rubrics
+         reflect_batch = None
+         reflect_ids = None
++        reflect_out = None
+ 
+         if reflect_prompts and reflect_enabled_this_step:
+             if answer_aware_enabled:
+@@ -958,6 +1017,8 @@
+                     q_idx, r_idx, positive_sum, negative_sum = future_to_task[future]
+                     try:
+                         scored = future.result()
++                        if grade_details is not None:
++                            grade_details[q_idx][r_idx] = scored
+                         for a_idx in range(min(num_answers, len(scored))):
+                             total_score = scored[a_idx].get("total_score", 0.0)
+                             score_matrices[q_idx][r_idx, a_idx] = normalize_score_to_minus1_1(
+@@ -1005,6 +1066,7 @@
+         metrics["policy_no_valid_rubrics_query_count"] = float(no_valid_rubrics_query_count)
+ 
+         rubrics_rewards: List[float] = []
++        rubrics_reward_details: List[Dict[str, Any]] = []
+         reflect_improvements = {(q, r): 0.0 for q in range(batch_size) for r in range(num_rubrics)}
+         reflect_improvement_values = {(q, r): [] for q in range(batch_size) for r in range(num_rubrics)}
+         reflect_improvement_triplet = {}
+@@ -1263,7 +1325,9 @@
+ 
+             for q_idx in range(batch_size):
+                 if use_diversity:
+-                    diversity_per_rubric = batch_calculate_diversity_rewards(rubrics_per_query[q_idx])
++                    diversity_per_rubric = batch_calculate_diversity_rewards(
++                        rubrics_per_query[q_idx], raise_on_error=self._rq2_enabled()
++                    )
+                 else:
+                     diversity_per_rubric = [0.0] * num_rubrics
+                 if similarity_penalty_weight > 0.0:
+@@ -1275,6 +1339,12 @@
+                 for r_idx in range(num_rubrics):
+                     if parse_failures[q_idx, r_idx]:
+                         rubrics_rewards.append(-1.0)
++                        rubrics_reward_details.append({
++                            "q_idx": q_idx,
++                            "r_idx": r_idx,
++                            "parse_failed": True,
++                            "total_reward": -1.0,
++                        })
+                         continue
+                     disc = float(np.std(score_matrices[q_idx][r_idx, :]))
+                     div = float(diversity_per_rubric[r_idx]) if r_idx < len(diversity_per_rubric) else 0.0
+@@ -1299,6 +1369,18 @@
+                         - similarity_penalty_weight * pen_r
+                     )
+                     rubrics_rewards.append(total)
++                    rubrics_reward_details.append({
++                        "q_idx": q_idx,
++                        "r_idx": r_idx,
++                        "parse_failed": False,
++                        "total_reward": float(total),
++                        "discrimination_reward": disc,
++                        "diversity_reward": div,
++                        "reflect_reward": refl,
++                        "similarity_reward": sim_val,
++                        "similarity_penalty": float(pen_r),
++                        "intra_rubric_avg_cos_sim": float(avg_sim_r),
++                    })
+                     disc_vals.append(disc)
+                     div_vals.append(div)
+                     reflect_vals.append(refl)
+@@ -1327,6 +1409,9 @@
+             )
+ 
+         # Step E.5: save unified step prompts/outputs for debugging and analysis
++        policy_inputs = []
++        rubrics_inputs = []
++        reflect_records = []
+         try:
+             if not hasattr(self, "prompt_output_dir") or self.prompt_output_dir is None:
+                 exp_log_dir = os.path.join(self.config.trainer.default_local_dir, "training_logs")
+@@ -1400,6 +1485,34 @@
+                 json.dump(unified_log_data, f, ensure_ascii=False, indent=2)
+         except Exception as e:
+             print("[message omitted]")
++
++        self._emit_rq2(
++            "on_iteration",
++            {
++                "input_step": int(self.global_steps),
++                "update_step": int(self.global_steps + 1),
++                "iteration_idx": int(iteration_idx),
++                "prompt_ids": self._batch_values(batch, "prompt_id"),
++                "prompt_hashes": self._batch_values(batch, "prompt_hash"),
++                "source_indices": self._batch_values(batch, "source_index"),
++                "questions": [str(x) for x in questions],
++                "conversation_texts": conversation_texts,
++                "answers_per_query": answers_per_query,
++                "rubrics_per_query": rubrics_per_query,
++                "score_matrices": [matrix.tolist() for matrix in score_matrices],
++                "grade_details": grade_details,
++                "parse_failures": parse_failures.tolist(),
++                "policy_rewards": policy_rewards,
++                "policy_train_q_indices": policy_train_q_indices,
++                "rubrics_rewards": rubrics_rewards,
++                "rubrics_reward_details": rubrics_reward_details,
++                "reflect_records": reflect_records,
++                "policy_response_token_counts": self._response_token_counts(ans_gen_out),
++                "rubric_response_token_counts": self._response_token_counts(rubrics_out),
++                "reflect_response_token_counts": self._response_token_counts(reflect_out),
++                "metrics": dict(metrics),
++            },
++        )
+ 
+         # Step F: Policy update
+         policy_update_freq = max(1, int(adv_cfg.get("policy_update_freq", 1)))
+@@ -1436,6 +1549,7 @@
+                 norm_adv_by_std_in_grpo=config.algorithm.get("norm_adv_by_std_in_grpo", True),
+                 config=config.algorithm,
+             )
++            self._emit_rq2("on_advantages", POLICY_LLM_ADAPTER, policy_full_batch)
+             self._policy_accum_batches.append(policy_full_batch)
+             pending_policy_batches = len(self._policy_accum_batches)
+             metrics["policy/accum_target_steps"] = float(policy_grad_accum_steps)
+@@ -1508,6 +1622,7 @@
+                 norm_adv_by_std_in_grpo=config.algorithm.get("norm_adv_by_std_in_grpo", True),
+                 config=config.algorithm,
+             )
++            self._emit_rq2("on_advantages", RUBRICS_GEN_ADAPTER, rubrics_full_batch)
+             self._rubrics_accum_batches.append(rubrics_full_batch)
+             pending_rubrics_batches = len(self._rubrics_accum_batches)
+             metrics["rubrics/accum_target_steps"] = float(rubrics_grad_accum_steps)
+@@ -3645,6 +3760,7 @@
+                 t_start = time.time()
+                 result = batch_calculate_diversity_rewards(
+                     rubrics_list=generated_rubrics[:total_samples],
++                    raise_on_error=self._rq2_enabled(),
+                 )
+                 t_elapsed = time.time() - t_start
+                 print("[message omitted]")
+@@ -3851,6 +3967,7 @@
+         
+         rubrics_path = os.path.join(base_dir, "rubrics_generator", f"step_{self.global_steps}")
+         self.actor_rollout_wg.save_checkpoint(rubrics_path, RUBRICS_GEN_ADAPTER)
++        self._emit_rq2("on_checkpoint", policy_path, rubrics_path)
+         
+         print("[message omitted]")
+ 
+@@ -4850,7 +4967,8 @@
+                         from reward_calculator import batch_calculate_diversity_rewards
+                         
+                         diversity_rewards_list = batch_calculate_diversity_rewards(
+-                            rubrics_list=all_rubrics_texts
++                            rubrics_list=all_rubrics_texts,
++                            raise_on_error=self._rq2_enabled(),
+                         )
+                         
+                         for i, sample_idx in enumerate(diversity_sample_indices):
+--- a/third_party/verl/verl/workers/config/rollout.py
++++ b/third_party/verl/verl/workers/config/rollout.py
+@@ -110,6 +110,9 @@
+ 
+ @dataclass
+ class RolloutConfig(BaseConfig):
++    # Forward the experiment seed already consumed by vLLMRollout.
++    seed: int = 0
++
+     _mutable_fields = {"max_model_len", "load_format"}
+ 
+     name: Optional[str] = MISSING

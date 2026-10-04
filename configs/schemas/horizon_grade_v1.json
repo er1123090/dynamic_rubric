@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parse_status", "public_label", "grade", "probability_present",
+    "yes_logprob", "no_logprob", "retry_count"
+  ],
+  "properties": {
+    "parse_status": {"type": "string", "enum": ["ok", "ambiguous_target_tie"]},
+    "public_label": {"type": ["string", "null"], "enum": ["PRESENT", "NOT_PRESENT", null]},
+    "grade": {"type": ["integer", "null"], "enum": [0, 1, null]},
+    "probability_present": {"type": "number", "minimum": 0, "maximum": 1},
+    "yes_logprob": {"type": "number"},
+    "no_logprob": {"type": "number"},
+    "retry_count": {"type": "integer", "minimum": 0}
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "source_archive": "docs/EvoRubrics-2155.zip",
+  "source_archive_sha256": "82bad1b31e6db0f0e9890431154a206c0f48881f8159ae04f81a45167b3025f6",
+  "original_file_count": 829,
+  "missing_original_files": [],
+  "modified_files": [
+    {
+      "path": "evorubric-main/adversarial_dataset.py",
+      "original_sha256": "4fb817cb64bcb4c40067350ac3f314ae455ff6498844116c3f422583b256038b",
+      "patched_sha256": "cd003fac1e9ca0c9f27d4a8a3cc0d3ca15896c1a372c30ac45a10398fd91b864"
+    },
+    {
+      "path": "evorubric-main/dual_lora_worker.py",
+      "original_sha256": "37f50345b692c4c01a2b0fd6b42cbd677adc159b652f34fce03acbf1f54f3f94",
+      "patched_sha256": "5bee94d7519187755b7ebfef9b57f2104b441bfc2617c18296cacb5867480dc7"
+    },
+    {
+      "path": "evorubric-main/reward_calculator.py",
+      "original_sha256": "e8d750fdd1b2a1b0a9489a3057965277b196e1e1b4bc285c75e1035a7076e3a3",
+      "patched_sha256": "d89df8426f9febbd6335847ba9e0eab7a55de61c67ee232bad89b765c07704d4"
+    },
+    {
+      "path": "evorubric-main/shared_base_trainer.py",
+      "original_sha256": "64bee3398cc79a7983669df5379e35e76771f7d1571bcac2870792ab7633a7cf",
+      "patched_sha256": "e0d72e878c40c26f57696be234be047982dad2bd3ac769337c7cc78a3525e644"
+    },
+    {
+      "path": "third_party/verl/verl/workers/config/rollout.py",
+      "original_sha256": "cf1dd84066bcb023972e8670c5bcf30f8b9753c8e7ccd72c759c9d5ec6e1c11c",
+      "patched_sha256": "c694c6f33d0684124f455048e699516b80c584b4886546270f3b1edf3670d7cd"
+    }
+  ],
+  "patch_file": "environment/source-snapshots/EvoRubrics-2155-rq2.patch",
+  "patch_sha256": "71dee096327db68bfd8efc5b838ccd31a1771e5459108e60aa5e44f3c8c31181"
+}

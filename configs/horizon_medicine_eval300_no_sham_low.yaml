@@ -1,0 +1,62 @@
+experiment: static_rubric_discriminability_horizon_eval300_no_sham_low
+split_seed: 1729
+bootstrap_seed: 2718
+paths:
+  public_data: data/rar/medicine/eval300
+  artifacts: artifacts/horizon/medicine/eval300-no-sham-low
+  results: results/horizon/medicine/eval300-no-sham-low
+models:
+  rubric_extractor:
+    requested_model: gpt-5-mini
+    api_mode: batch
+    reasoning_effort: low
+    prompt_version: onlinerubric-figure8-horizon-v1
+    schema: configs/schemas/horizon_extraction_v1.json
+  policy:
+    model: Qwen/Qwen3-1.7B
+    revision: 70d244cc86ccca08cf5af4e1e306ecf908b1ad5e
+    tokenizer_revision: 70d244cc86ccca08cf5af4e1e306ecf908b1ad5e
+    local_snapshot: models/Qwen3-1.7B
+    thinking: false
+  proxy_grader:
+    model: Qwen/Qwen3-32B
+    revision: 9216db5781bf21249d130ec9da846c4624c16137
+    tokenizer_revision: 9216db5781bf21249d130ec9da846c4624c16137
+    local_snapshot: models/Qwen3-32B
+    thinking: false
+    temperature: 0
+    target_encoding_version: yes_no_full_sequence_v1
+training:
+  max_steps: 48
+  train_batch_size: 96
+  rollout_n: 16
+  checkpoint_steps: [0, 3, 6, 9, 13, 16, 24, 32, 40, 48]
+  reward_source: rar_static_r0_only
+  reward_mode: hard_binary_weighted_rational_v1
+  artifact_inputs: [data/rar/medicine/eval300/train.jsonl]
+  epochs: 3
+  learning_rate: 5.0e-6
+  warmup_ratio: 0.1
+  kl_coefficient: 0.01
+  sampling_temperature: 1.0
+  max_response_length: 3584
+horizon:
+  domain: medicine
+  train_count: 1500
+  development_count: 0
+  final_count: 300
+  training_seeds: [11]
+  target_epochs: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0]
+  fixed_control_count: 8
+  sham_control_count: 0
+  pool_a_count: 8
+  pool_b_count: 16
+  max_online_criteria: 8
+  deterioration_margin: 0.03
+  refresh_margin: 0.03
+  equivalence_margin: 0.015
+  epsilon_spread: 0.01
+  delta_advantage: 1.0e-8
+  bootstrap_replicates: 10000
+execution:
+  mode: live

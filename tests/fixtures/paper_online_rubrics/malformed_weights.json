@@ -1,0 +1,4 @@
+{
+  "non_numeric": {"criterion_id": "bad-string", "criterion": "Bad", "weight": "heavy", "source": "offline"},
+  "non_finite": {"criterion_id": "bad-infinity", "criterion": "Bad", "weight": "Infinity", "source": "offline"}
+}

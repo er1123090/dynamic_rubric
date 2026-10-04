@@ -1,0 +1,9 @@
+{
+  "criteria": [
+    {"criterion_id": "positive", "criterion": "Positive behavior", "weight": 3, "source": "offline"},
+    {"criterion_id": "negative", "criterion": "Reward hacking behavior", "weight": -2, "source": "offline"},
+    {"criterion_id": "zero", "criterion": "Audit-only marker", "weight": 0, "source": "offline"}
+  ],
+  "grader_output": {"1": "PRESENT", "2": "PRESENT", "3": "PRESENT"},
+  "expected": {"numerator": 1, "denominator": 3, "reward": "1/3"}
+}

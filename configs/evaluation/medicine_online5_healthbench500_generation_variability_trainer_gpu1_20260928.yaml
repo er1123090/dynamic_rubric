@@ -1,0 +1,89 @@
+schema_version: 1
+output_root: ../../outputs/policy_eval/medicine_online5_healthbench500_generation_variability_trainer1_20260928
+seed: 11
+bootstrap_replicates: 10000
+experiment:
+  purpose: healthbench_generation_variability
+  generation_seeds: [101, 102, 103]
+  checkpoints: [1, 12, 24, 36, 48]
+  fixed_prompt_sample_seed: 11
+healthbench_upstream:
+  repository: ../../environment/upstream/simple-evals
+  commit: 5e623c2b400af62a1278e23595f95b0853d7fe8a
+  source_path: healthbench_eval.py
+datasets:
+  healthbench:
+    kind: healthbench
+    path: ../../data/source/healthbench_full_2025-05-07-06-14-12.jsonl
+    expected_count: 5000
+    sha256: e99dd3c6372c10d6fcc5e385c5fae69d0dd40392dae56836ef9493ae324ecd2f
+    sample_count: 500
+    sample_seed: 11
+models:
+  online_dense_step_001:
+    method: online
+    role: base
+    step: 1
+    served_model: online_dense_step_001
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_1
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_012:
+    method: online
+    role: checkpoint
+    step: 12
+    served_model: online_dense_step_012
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_12
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_024:
+    method: online
+    role: checkpoint
+    step: 24
+    served_model: online_dense_step_024
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_24
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_036:
+    method: online
+    role: checkpoint
+    step: 36
+    served_model: online_dense_step_036
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_36
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+  online_dense_step_048:
+    method: online
+    role: final
+    step: 48
+    served_model: online_dense_step_048
+    artifact: phase1-online-rubrics-medicine-full-dense-20260919-seed11:global_step_48
+    local_path: ''  # Required: set this machine's model/checkpoint path.
+generation:
+  base_url: http://127.0.0.1:28241/v1
+  timeout_seconds: 600
+  max_retries: 4
+  max_output_tokens: 4096
+  workers: 64
+  max_in_flight: 64
+  temperature: 0.7
+  top_p: 0.8
+grading:
+  base_url: http://127.0.0.1:28242/v1
+  served_model: Qwen/Qwen3-32B
+  revision: 9216db5781bf21249d130ec9da846c4624c16137
+  timeout_seconds: 600
+  max_retries: 4
+  max_output_tokens: 1024
+  workers: 64
+  max_in_flight: 64
+  parse_retries: 2
+runtime:
+  hostname: trainer
+  gpu: 1
+  vllm: ''  # Required: set this machine's vLLM executable.
+  policy_port: 28241
+  judge_port: 28242
+  policy_gpu_memory_utilization: 0.18
+  judge_gpu_memory_utilization: 0.90
+  max_model_len: 32768
+  startup_timeout_seconds: 900
+  free_memory_threshold_mib: 4096
+  poll_seconds: 60
+  blocking_command_fragment: trainer.experiment_name=phase1-static-r0-medicine-qwen3-4b-matched-dense-20260928-seed11

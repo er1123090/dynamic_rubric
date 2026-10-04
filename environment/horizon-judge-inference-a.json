@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "purpose": "static-rubric-discriminability-horizon",
+  "served_model": "Qwen/Qwen3-32B",
+  "model_revision": "9216db5781bf21249d130ec9da846c4624c16137",
+  "tokenizer_revision": "9216db5781bf21249d130ec9da846c4624c16137",
+  "score_proxy_endpoint": "http://127.0.0.1:8102",
+  "routing": "parallel-deterministic-length-balanced",
+  "replicas": [
+    {
+      "host": "",
+      "gpu_indices": [0, 1],
+      "tensor_parallel_size": 2,
+      "tunnel_endpoint": "http://127.0.0.1:18002"
+    },
+    {
+      "host": "",
+      "gpu_indices": [2, 3],
+      "tensor_parallel_size": 2,
+      "tunnel_endpoint": "http://127.0.0.1:18013"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["analysis", "new_criteria"],
+  "properties": {
+    "analysis": {"type": "string"},
+    "new_criteria": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidate_id", "quote", "criterion", "weight",
+          "importance_class", "criterion_type"
+        ],
+        "properties": {
+          "candidate_id": {"type": "string", "minLength": 1},
+          "quote": {"type": "string", "minLength": 1},
+          "criterion": {"type": "string", "minLength": 1},
+          "weight": {"type": "integer", "minimum": 1},
+          "importance_class": {
+            "type": "string",
+            "enum": ["essential", "important", "optional"]
+          },
+          "criterion_type": {"type": "string", "enum": ["quality", "pitfall"]}
+        }
+      }
+    }
+  }
+}

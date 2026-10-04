@@ -1,0 +1,20 @@
+extends:
+  - _common.yaml
+  - _online_rubrics.yaml
+domain: medicine
+method: online_rubrics
+
+training:
+  # Dense trajectory run: retain a parameter snapshot after every optimizer update.
+  checkpoint_interval_steps: 1
+
+data:
+  train_path: data/rar/medicine/eval300/train.jsonl
+  in_domain_policy_eval:
+    path: data/rar/medicine/eval300/final.jsonl
+  external_policy_eval:
+    name: HealthBench
+    path: data/external/healthbench/prompts.jsonl
+
+tracking:
+  group: medicine_online_rubrics_phase1

@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "source_zip": "docs/EvoRubrics-2155.zip",
+  "source_zip_sha256": "82bad1b31e6db0f0e9890431154a206c0f48881f8159ae04f81a45167b3025f6",
+  "extracted_root": "environment/upstream/EvoRubrics-2155-clean",
+  "patch_file": "environment/source-snapshots/EvoRubrics-2155-clean-gptoss-20260924.patch",
+  "patch_sha256": "d3c87b51d8ff2d205f461b47c3d4569c23cfee3ee513a5b742f8be76dc357085",
+  "changed_source_files": [
+    {
+      "path": "evorubric-main/llm_evaluator.py",
+      "pristine_sha256": "ee5c6b9a9d7881e9991aac5ca415c9fb6de05b970c4a43fd8716fa6243700b1b",
+      "patched_sha256": "74328fb978955909469791cda8c8628842145d5afef168da96f8ad7018e9469c"
+    },
+    {
+      "path": "evorubric-main/shared_base_trainer.py",
+      "pristine_sha256": "64bee3398cc79a7983669df5379e35e76771f7d1571bcac2870792ab7633a7cf",
+      "patched_sha256": "630b92106685ba3a3d1d61ab3bd58741403bedcdbe81acfac725b85024729e32"
+    }
+  ],
+  "source_changes": [
+    "Make judge timeout and default completion-token cap configurable for GPT-OSS compatibility; defaults preserve upstream behavior.",
+    "Save initial step_0 and save both LoRA adapters after every completed update when SAVE_LORA_FREQ=1."
+  ],
+  "runtime_substitution": {
+    "original_judge_family": "DeepSeek via OpenAI-compatible API",
+    "replacement_model": "openai/gpt-oss-120b",
+    "judge_endpoints": [
+      "http://127.0.0.1:28003",
+      "http://127.0.0.1:28004"
+    ],
+    "load_balancer": "http://127.0.0.1:28014/v1",
+    "optimizer_host": "trainer",
+    "optimizer_gpu": 1,
+    "judge_host": "inference_b",
+    "judge_gpus": [
+      0,
+      1,
+      2,
+      3
+    ]
+  },
+  "training_recipe": {
+    "script": "environment/upstream/EvoRubrics-2155-clean/scripts/run_unified_golden.sh",
+    "algorithm": "grpo",
+    "training_flow": "unified",
+    "train_samples": 4000,
+    "eval_samples": 1000,
+    "eval_before_train": true,
+    "max_concurrent_api_calls": 64,
+    "batch_size": 4,
+    "num_rubrics": 4,
+    "num_answers": 4,
+    "lora_rank": 32,
+    "lora_alpha": 64,
+    "policy_lr": 2e-05,
+    "rubric_lr": 5e-06,
+    "save_lora_freq": 1
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "minProperties": 1,
+  "patternProperties": {
+    "^[1-9][0-9]*$": {"type": "string", "enum": ["PRESENT", "NOT_PRESENT"]}
+  },
+  "additionalProperties": false
+}

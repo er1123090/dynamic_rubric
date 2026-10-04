@@ -1,0 +1,19 @@
+{
+  "analysis": "phase1_all_saved_checkpoint_probe_analysis",
+  "checkpoint_selection": "all_committed_saved_policy_checkpoints",
+  "policy_checkpoints": "discover_at_execution_time",
+  "evaluator_checkpoints": "same_as_policy_checkpoints",
+  "adjacent_predecessor": "previous_discovered_saved_checkpoint",
+  "reuse_horizon_matrix": "selected_anchor_checkpoints_only",
+  "reuse_horizon_anchors": [0, 9, 16, 32, 48],
+  "scoring_scope": "union_of_all_saved_fresh_diagonals_all_saved_adjacent_and_anchor_triangle",
+  "missing_coverage": "planned_not_completed_never_omit",
+  "primary_dataset": "fixed_train_probe_100_pool_B",
+  "policy_outcomes": "all_saved_checkpoints_on_rar_medicine_heldout_300_and_healthbench",
+  "heldout_timing_analysis_role": "forbidden",
+  "run_root": "outputs/medicine/online_rubrics/seed-11/phase1-online-rubrics-medicine-full-20260905-seed11-final",
+  "audit_roots": [
+    "outputs/medicine/online_rubrics/seed-11/phase1-policy-audit-through34-20260907",
+    "outputs/medicine/online_rubrics/seed-11/phase1-policy-audit-all-saved"
+  ]
+}

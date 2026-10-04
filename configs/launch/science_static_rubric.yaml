@@ -1,0 +1,104 @@
+# Science Static R0. Edit data/models/training/infrastructure/output/launch below.
+# Optimization values in training reach veRL; checkpoint retention is validated.
+schema_version: 1
+experiment: matched_static_r0_grpo
+domain: science
+method: static_r0_matched
+seed: 11
+
+data:
+  train_path: data/rar/science/verl/train.parquet
+  validation_path: data/rar/science/verl/development.parquet
+  static_rubric_path: data/rar/science/public/train.jsonl
+
+models:
+  policy:
+    model: Qwen/Qwen3-4B-Instruct-2507
+    revision: cdbee75f17c01a7cc42f958dc650907174af0554
+    local_snapshot: models/Qwen3-4B-Instruct-2507
+  judge:
+    model: Qwen/Qwen3-32B
+    revision: 9216db5781bf21249d130ec9da846c4624c16137
+    tokenizer_revision: 9216db5781bf21249d130ec9da846c4624c16137
+    local_snapshot: models/Qwen3-32B
+
+training:
+  algorithm: grpo
+  epochs: 3
+  global_prompt_batch: 96
+  expected_global_steps: 48
+  checkpoint_interval_steps: 1
+  checkpoint_retention:
+    latest_full_resume_state: true
+    older_parameter_snapshots: true
+    older_optimizer_state: false
+  rollout_tensor_parallel_size: 1
+  rollouts_per_prompt: 16
+  ppo_mini_batch_size: 96
+  learning_rate: 5.0e-6
+  warmup_ratio: 0.1
+  kl_coefficient: 0.01
+  max_prompt_length: 4096
+  max_response_length: 3584
+  rollout_temperature: 1.0
+  rollout_top_p: 0.95
+
+infrastructure:
+  code_host: ''  # Optional metadata: set your training host label.
+  optimizer:
+    host: ''
+    gpus: [1]  # Static/Online: [0] or [0, 1]; physical GPU IDs visible to the selected runtime
+  services:
+    qwen3_32b:
+      hosts: ['']
+      instances:
+        - host: ''
+          gpus: [0, 1]
+          tensor_parallel_size: 2
+          vllm_bin: .venvs/judge/bin/vllm
+          python: .venvs/judge/bin/python
+          bind_host: 127.0.0.1
+          port: 28136
+          proxy_port: 28137
+          gpu_memory_utilization: 0.90
+          max_model_len: 32768
+          max_num_seqs: 16
+          max_num_batched_tokens: 2048
+          dtype: bfloat16
+
+output:
+  root: outputs
+  layout: '{domain}/{method}/seed-{seed}/{run_id}'
+
+tracking:
+  project: dynamic_rubric_static_r0_matched
+
+launch:
+  entry_python: .venvs/verl/bin/python
+  run_id: phase1-static-r0-science-run001
+  tuning_mode: custom
+  environment:
+    # Service addresses and low-level systems knobs; these are passed through.
+    DYNAMIC_RUBRIC_VLLM_URL: http://127.0.0.1:28137
+    DYNAMIC_RUBRIC_GRADER_TIMEOUT_SECONDS: '14400'
+    ROLLOUT_GPU_MEMORY: '0.14'
+    ROLLOUT_MAX_NUM_SEQS: '32'
+    ROLLOUT_MAX_NUM_BATCHED_TOKENS: '8192'
+    ROLLOUT_UPDATE_WEIGHTS_BUCKET_MEGABYTES: '512'
+    ROLLOUT_KV_CACHE_MEMORY_BYTES: '8589934592'
+    ROLLOUT_AGENT_NUM_WORKERS: '16'
+    REWARD_NUM_WORKERS: '32'
+    ACTOR_MAX_TOKEN_LEN: '8192'
+    ROLLOUT_LOG_PROB_MAX_TOKEN_LEN: '8192'
+    REF_LOG_PROB_MAX_TOKEN_LEN: '8192'
+    ATTN_IMPLEMENTATION: sdpa
+    ENABLE_GRADIENT_CHECKPOINTING: 'True'
+    USE_REMOVE_PADDING: 'False'
+    USE_FUSED_KERNELS: 'False'
+    FULL_DETERMINISM: 'False'
+    ENFORCE_EAGER: 'False'
+    REF_PARAM_OFFLOAD: 'True'
+    ACTOR_PARAM_OFFLOAD: 'False'
+    ACTOR_OPTIMIZER_OFFLOAD: 'True'
+    TEST_FREQ: '-1'
+    VAL_BEFORE_TRAIN: 'False'
