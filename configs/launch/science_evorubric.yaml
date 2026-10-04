@@ -6,24 +6,31 @@ schema_version: 1
 experiment: phase1_evaluator_update_value
 domain: science
 method: evorubrics
+# 예: seed를 23으로 바꾸면 probe seed와 manifest 경로도 seed-23으로 분리합니다.
 seed: 11
 data:
+  # 예: 1200개 JSONL이면 1200으로 설정하며 실제 train 행 수와 정확히 일치해야 합니다.
   train_prompt_count: 1500
   fixed_train_probe:
     count: 100
+    # 위 seed 변경 예시에서는 이 값도 23으로 맞춥니다.
     sample_seed: 11
     source: train
     remains_in_training: true
     extra_responses_used_for_gradient: false
+    # 예: seed 23이면 outputs/{domain}/shared/seed-23/manifests/fixed_train_probe.json
     manifest: outputs/{domain}/shared/seed-11/manifests/fixed_train_probe.json
+  # 예: 별도 평가 파일은 /path/to/in_domain_final.jsonl처럼 지정할 수 있습니다.
   in_domain_policy_eval:
     count: 300
     policy_only: true
     path: data/rar/science/public/final.jsonl
+  # 예: 외부 평가는 /path/to/external_eval.jsonl을 준비하고 아래 path를 바꿉니다.
   external_policy_eval:
     policy_only: true
     name: GPQA-Diamond
     path: data/external/gpqa_diamond/prompts.jsonl
+  # 예: /path/to/train.jsonl; train_prompt_count와 같은 데이터여야 합니다.
   train_path: data/rar/science/public/train.jsonl
 models:
   policy:
@@ -31,6 +38,7 @@ models:
     revision: cdbee75f17c01a7cc42f958dc650907174af0554
     thinking: false
     backend: local_optimizer
+    # 예: /path/to/Qwen3-4B-Instruct-2507 (policy/shared backbone 공용)
     local_snapshot: models/Qwen3-4B-Instruct-2507
   shared_backbone:
     model: Qwen/Qwen3-4B-Instruct-2507
@@ -38,23 +46,30 @@ models:
     thinking: false
     backend: shared_local_backbone
   judge:
+    # 예: /path/to/gpt-oss-120b
     local_snapshot: models/gpt-oss-120b
     model: openai/gpt-oss-120b
     revision: b5c939de8f754692c1647ca79fbf85e8c1e70f8a
     thinking: false
     backend: remote_vllm
     base_url_env: PHASE1_GPT_OSS_BASE_URL
-# paper keeps reproduction defaults; custom permits the validated training knobs below.
+# 학습값을 바꾸려면 launch.tuning_mode을 custom으로 설정합니다(paper는 재현값 고정).
 training:
   algorithm: grpo
+  # 예: 2 epochs. 데이터/batch로 계산되는 step이 expected_global_steps보다 먼저 끝날 수 있습니다.
   epochs: 3
+  # 예: 64
   global_prompt_batch: 96
+  # 예: 32; 줄이면 아래 audit/reuse/analysis anchor에서 32 초과 값을 제거합니다.
   expected_global_steps: 48
+  # 유지: 매 step policy/generator LoRA 저장은 고정이며 1을 유지합니다.
   checkpoint_interval_steps: 1
+  # 유지: retention 계약 기록값이며 canonical Evo runner는 중단된 본 학습 --resume을 지원하지 않습니다.
   checkpoint_retention:
     latest_full_resume_state: true
     older_parameter_snapshots: true
     older_optimizer_state: false
+  # step 32 예시라면 40, 48을 제거하고 마지막 값을 32 이하로 맞춥니다.
   audit_checkpoints:
     - 0
     - 3
@@ -81,9 +96,11 @@ training:
     - cumulative_policy_kl_from_pi0
     - response_length
 infrastructure:
-  code_host: ''  # Optional metadata: set your training host label.
+  # 선택적 기록값 예: trainer; 실제 배치/SSH에는 사용되지 않으므로 빈 값도 허용됩니다.
+  code_host: ''
   optimizer:
     host: ''
+    # 예: [2]. Evo optimizer는 반드시 GPU 한 장만 지정합니다([2,3]은 지원하지 않음).
     gpus:
       - 1
   services:
@@ -91,19 +108,25 @@ infrastructure:
       host: ''
       instances:
         - host: ''
+          # 예: inference GPU [0,1]에서 TP 2; TP는 GPU 목록 길이와 같아야 합니다.
           gpus: [0, 1]
           tensor_parallel_size: 2
+          # 예: /path/to/judge-venv/bin/vllm 및 /path/to/judge-venv/bin/python
           vllm_bin: .venvs/judge/bin/vllm
           python: .venvs/judge/bin/python
           bind_host: 127.0.0.1
+          # 예: 로컬/터널 포트 18001을 쓰면 EVORUBRICS_JUDGE_URL도 함께 바꿉니다.
           port: 28011
+          # 예: 0.85; 실제 VRAM에 맞춰 batching 값과 함께 조정합니다.
           gpu_memory_utilization: 0.48
           max_model_len: 32768
-          max_num_seqs: 16
-          max_num_batched_tokens: 2048
+          # 예: max_num_seqs 8 / max_num_batched_tokens 1024; OOM이면 먼저 낮춥니다.
+          max_num_seqs: 16  # 예: 32 (VRAM 여유가 있을 때)
+          max_num_batched_tokens: 2048  # 예: 4096 (처리 속도와 VRAM 함께 확인)
           dtype: auto
       tensor_parallel_size: 2
       base_url_env: PHASE1_GPT_OSS_BASE_URLS
+    # 아래 Qwen 서비스 블록은 공통 형식에서 상속되지만 canonical Evo 실행에서는 사용하지 않습니다.
     qwen3_32b:
       hosts:
         - ''
@@ -121,6 +144,7 @@ infrastructure:
           max_num_batched_tokens: 2048
           dtype: bfloat16
       base_url_env: PHASE1_QWEN32B_BASE_URLS
+  # 아래 pi0_control 블록도 Online 공통 형식용이며 canonical Evo 실행에서는 사용하지 않습니다.
   pi0_control:
     host: ''
     gpus:
@@ -140,6 +164,7 @@ infrastructure:
     mode: precompute_before_optimizer
     immutable_cache: true
 output:
+  # 예: /path/to/outputs (매 step 두 LoRA를 저장할 충분한 디스크 필요)
   root: outputs
   layout: '{domain}/{method}/seed-{seed}/{run_id}'
 tracking:
@@ -148,27 +173,38 @@ tracking:
   group: science_evorubrics_phase1
 # Runtime knobs: edit these values for the next run; no servers are started here.
 launch:
+  # 예: /path/to/evorubrics-venv/bin/python
   entry_python: .venvs/evorubrics/bin/python
+  # 예: phase1-evo-science-exp02; 매 실행마다 고유하게 지정합니다.
   run_id: phase1-evo-science-run001
+  # 예: custom (Evo/학습값 변경 시); paper는 논문 재현 기본값을 검사합니다.
   tuning_mode: paper
+  # 예: phase1-evo-science-smoke02; run_id와 별도로 매 실행마다 고유하게 지정합니다.
   smoke_run_id: phase1-evo-science-smoke001
   environment:
+    # 예: SSH 터널이면 http://127.0.0.1:18001/v1
     EVORUBRICS_JUDGE_URL: http://127.0.0.1:28011/v1
 evorubrics:
   policy_adapter: theta
   rubric_generator_adapter: psi
+  # 예: M=2, N=3이면 pool_b_count=6으로 바꾸고 seed 목록도 정확히 3개로 맞춥니다.
   policy_responses_m: 4
   rubric_sets_n: 4
   pool_b_count: 16
   dataset_mode: open_rubrics
   training_flow: unified
-  # Editable in custom mode; paper mode requires reproduction defaults.
+  # 아래 값은 custom 모드에서만 변경합니다. 예: LoRA rank 16 / alpha 32.
   lora_rank: 32
   lora_alpha: 64
+  # 예: policy LR 1.0e-5
   policy_learning_rate: 2.0e-05
+  # 예: rubric generator LR 3.0e-6
   rubric_generator_learning_rate: 5.0e-06
+  # 예: 0.001
   kl_loss_coefficient: 0.0001
+  # 예: 0.8
   generation_temperature: 0.7
+  # 합은 1이어야 합니다. 예: similarity/discrimination/diversity/reflect = 0.4/0.3/0.2/0.1
   reward_weights:
     similarity: 0.25
     discrimination: 0.25
@@ -177,6 +213,7 @@ evorubrics:
   reflect_use_golden_rubrics: true
   save_policy_and_generator: true
   fixed_rubric_generation_seeds: true
+  # 예: N=3이면 [23001, 23002, 23003]; pool_b_count도 policy_responses_m × 3으로 변경합니다.
   rubric_generation_seeds:
     - 11001
     - 11002
@@ -195,6 +232,8 @@ analysis:
   use_initial_rubric_as_ground_truth: false
   enable_bon: false
   pool_a_b_disjoint: true
+  # training.reuse_anchors를 줄였다면 이 목록도 같은 step 범위로 맞춥니다.
+  # 예: 종료 step이 32이면 [0, 9, 16, 32]; training.reuse_anchors와 함께 맞춥니다.
   reuse_anchors:
     - 0
     - 9

@@ -1,93 +1,94 @@
 # Medicine Static R0. Edit data/models/training/infrastructure/output/launch below.
-# Optimization values in training reach veRL; checkpoint retention is validated.
+# 먼저 확인: data 경로, models.local_snapshot, 학습/추론 GPU, 실행 파일, 서비스 URL, run_id.
+# '예:'는 수정 방법을 보여주는 주석입니다. 현재 기본값은 그대로이며 상대경로는 저장소 루트 기준입니다.
 schema_version: 1
 experiment: matched_static_r0_grpo
 domain: medicine
 method: static_r0_matched
-seed: 11
+seed: 11  # 예: 23 (새 seed의 실험은 run_id도 구분)
 
 data:
-  train_path: data/rar/medicine/verl/train.parquet
-  validation_path: data/rar/medicine/verl/development.parquet
-  static_rubric_path: data/rar/medicine/eval300/train.jsonl
+  train_path: data/rar/medicine/verl/train.parquet  # 예: /path/to/rar/medicine/train.parquet
+  validation_path: data/rar/medicine/verl/development.parquet  # 예: /path/to/rar/medicine/development.parquet
+  static_rubric_path: data/rar/medicine/eval300/train.jsonl  # 예: /path/to/rar/medicine/train.jsonl (parquet와 같은 질문의 rubric)
 
 models:
   policy:
     model: Qwen/Qwen3-4B-Instruct-2507
     revision: cdbee75f17c01a7cc42f958dc650907174af0554
-    local_snapshot: models/Qwen3-4B-Instruct-2507
+    local_snapshot: models/Qwen3-4B-Instruct-2507  # 예: /path/to/models/Qwen3-4B-Instruct-2507 (위 revision과 일치)
   judge:
     model: Qwen/Qwen3-32B
     revision: 9216db5781bf21249d130ec9da846c4624c16137
     tokenizer_revision: 9216db5781bf21249d130ec9da846c4624c16137
-    local_snapshot: models/Qwen3-32B
+    local_snapshot: models/Qwen3-32B  # 예: /path/to/models/Qwen3-32B (judge 머신에서 접근 가능해야 함)
 
 training:
   algorithm: grpo
-  epochs: 3
-  global_prompt_batch: 96
-  expected_global_steps: 48
-  checkpoint_interval_steps: 1
-  checkpoint_retention:
+  epochs: 3  # 예: 4
+  global_prompt_batch: 96  # 예: 64 (ppo_mini_batch_size도 64 또는 약수로 설정)
+  expected_global_steps: 48  # 예: 32 (도달 가능한 epochs·데이터 양 필요)
+  checkpoint_interval_steps: 1  # 유지: 매 step 저장
+  checkpoint_retention:  # 유지: 과거 step은 파라미터, 최신 step만 전체 재개 상태
     latest_full_resume_state: true
     older_parameter_snapshots: true
     older_optimizer_state: false
-  rollout_tensor_parallel_size: 1
-  rollouts_per_prompt: 16
-  ppo_mini_batch_size: 96
-  learning_rate: 5.0e-6
-  warmup_ratio: 0.1
-  kl_coefficient: 0.01
-  max_prompt_length: 4096
-  max_response_length: 3584
-  rollout_temperature: 1.0
-  rollout_top_p: 0.95
+  rollout_tensor_parallel_size: 1  # 예: 2 (학습 GPU가 [2, 3]일 때; GPU 개수의 약수)
+  rollouts_per_prompt: 16  # 예: 8 (질문당 생성 응답 수)
+  ppo_mini_batch_size: 96  # 예: 64 (global_prompt_batch의 약수)
+  learning_rate: 5.0e-6  # 예: 1.0e-6
+  warmup_ratio: 0.1  # 예: 0.05
+  kl_coefficient: 0.01  # 예: 0.02
+  max_prompt_length: 4096  # 예: 2048
+  max_response_length: 3584  # 예: 2048
+  rollout_temperature: 1.0  # 예: 0.8
+  rollout_top_p: 0.95  # 예: 0.9
 
 infrastructure:
-  code_host: ''  # Optional metadata: set your training host label.
+  code_host: ''  # 예: train-node (선택적 기록용 라벨; SSH 접속 대상 아님)
   optimizer:
-    host: ''
-    gpus: [1]  # Static/Online: [0] or [0, 1]; physical GPU IDs visible to the selected runtime
+    host: ''  # 예: train-node (기록용; 비워도 됨)
+    gpus: [1]  # 예: [2] 또는 [2, 3] (현재 머신의 GPU 번호; 추론과 겹치지 않게)
   services:
     qwen3_32b:
-      hosts: ['']
+      hosts: ['']  # 예: [judge-node] (선택적 기록용)
       instances:
-        - host: ''
-          gpus: [0, 1]
-          tensor_parallel_size: 2
-          vllm_bin: .venvs/judge/bin/vllm
-          python: .venvs/judge/bin/python
-          bind_host: 127.0.0.1
-          port: 28136
-          proxy_port: 28137
-          gpu_memory_utilization: 0.90
-          max_model_len: 32768
-          max_num_seqs: 16
-          max_num_batched_tokens: 2048
+        - host: ''  # 예: judge-node (실제 서비스 명령은 추론 머신에서 직접 실행)
+          gpus: [0, 1]  # 예: [0, 1] (추론 머신 기준 번호)
+          tensor_parallel_size: 2  # 예: 2 (위 gpus 목록 길이와 일치)
+          vllm_bin: .venvs/judge/bin/vllm  # 예: /path/to/judge-env/bin/vllm
+          python: .venvs/judge/bin/python  # 예: /path/to/judge-env/bin/python
+          bind_host: 127.0.0.1  # 예: 127.0.0.1 (원격 접속은 SSH 터널 권장)
+          port: 28136  # 예: 29136 (raw vLLM 포트; 미사용 포트 선택)
+          proxy_port: 28137  # 예: 29137 (아래 DYNAMIC_RUBRIC_VLLM_URL도 맞춤)
+          gpu_memory_utilization: 0.90  # 예: 0.80 (모델 적재 가능한 VRAM 필요; 같은 GPU 서비스 합계 확인)
+          max_model_len: 32768  # 예: 16384 (judge 입력+응답을 수용할 길이)
+          max_num_seqs: 16  # 예: 32 (VRAM 여유가 있을 때 동시 처리 확대)
+          max_num_batched_tokens: 2048  # 예: 4096 (속도·VRAM 함께 확인)
           dtype: bfloat16
 
 output:
-  root: outputs
+  root: outputs  # 예: /path/to/experiment-outputs
   layout: '{domain}/{method}/seed-{seed}/{run_id}'
 
 tracking:
-  project: dynamic_rubric_static_r0_matched
+  project: dynamic_rubric_static_r0_matched  # 예: rar-static-experiments
 
 launch:
-  entry_python: .venvs/verl/bin/python
-  run_id: phase1-static-r0-medicine-run001
-  tuning_mode: custom
+  entry_python: .venvs/verl/bin/python  # 예: /path/to/verl-env/bin/python
+  run_id: phase1-static-r0-medicine-run001  # 예: phase1-static-r0-medicine-run002 (새 실험마다 변경)
+  tuning_mode: custom  # 예: custom (학습값 수정), paper (재현 기본값 고정)
   environment:
     # Service addresses and low-level systems knobs; these are passed through.
-    DYNAMIC_RUBRIC_VLLM_URL: http://127.0.0.1:28137
+    DYNAMIC_RUBRIC_VLLM_URL: http://127.0.0.1:28137  # 예: http://127.0.0.1:29137 (점수 프록시/터널 포트)
     DYNAMIC_RUBRIC_GRADER_TIMEOUT_SECONDS: '14400'
-    ROLLOUT_GPU_MEMORY: '0.14'
+    ROLLOUT_GPU_MEMORY: '0.14'  # 예: '0.20' (학습 GPU의 rollout 메모리 비율)
     ROLLOUT_MAX_NUM_SEQS: '32'
     ROLLOUT_MAX_NUM_BATCHED_TOKENS: '8192'
     ROLLOUT_UPDATE_WEIGHTS_BUCKET_MEGABYTES: '512'
     ROLLOUT_KV_CACHE_MEMORY_BYTES: '8589934592'
     ROLLOUT_AGENT_NUM_WORKERS: '16'
-    REWARD_NUM_WORKERS: '32'
+    REWARD_NUM_WORKERS: '32'  # 예: '16' (judge 처리량에 맞춘 요청 동시성)
     ACTOR_MAX_TOKEN_LEN: '8192'
     ROLLOUT_LOG_PROB_MAX_TOKEN_LEN: '8192'
     REF_LOG_PROB_MAX_TOKEN_LEN: '8192'
