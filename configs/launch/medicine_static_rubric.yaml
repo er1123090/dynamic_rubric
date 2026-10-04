@@ -1,14 +1,14 @@
-# 표시가 없는 항목도 설정 키는 유지하고, 설명과 예시에 따라 필요한 값을 조정합니다.
+# 표시가 없는 항목도 설정 키는 유지하고, 설명에 따라 필요한 값을 조정합니다.
 # [REQUIRED] 실행 전 확인·준비 필수. 기본값이 내 환경과 맞으면 그대로 사용합니다.
 # 추론 서버/Online 사전 생성 항목은 해당 단계를 직접 실행할 때 확인합니다.
 # Medicine Static R0. Edit data/models/training/infrastructure/output/launch below.
 # 먼저 확인: data 경로, models.local_snapshot, 학습/추론 GPU, 실행 파일, 서비스 URL, run_id.
-# '예:'는 수정 방법을 보여주는 주석입니다. 현재 기본값은 그대로이며 상대경로는 저장소 루트 기준입니다.
+# 상대경로는 저장소 루트 기준입니다.
 schema_version: 1
 experiment: matched_static_r0_grpo
 domain: medicine
 method: static_r0_matched
-seed: 11  # 예: 23 (새 seed의 실험은 run_id도 구분)
+seed: 11  # 새 seed의 실험은 run_id도 구분
 
 data:  # [REQUIRED] 실제 데이터 경로 확인; 외부 평가 항목은 아래 별도 표시
   train_path: data/rar/medicine/verl/train.parquet  # [REQUIRED]; 예: /path/to/rar/medicine/train.parquet
@@ -28,46 +28,46 @@ models:  # 모델 ID/revision 유지; local_snapshot 경로는 별도 REQUIRED
 
 training:  # 기본 학습값 사용 가능; 고정 항목 제외
   algorithm: grpo
-  epochs: 3  # 예: 4
-  global_prompt_batch: 96  # 예: 64 (ppo_mini_batch_size도 64 또는 약수로 설정)
-  expected_global_steps: 48  # 예: 32 (도달 가능한 epochs·데이터 양 필요)
+  epochs: 3
+  global_prompt_batch: 96  # ppo_mini_batch_size는 global_prompt_batch의 약수
+  expected_global_steps: 48  # 도달 가능한 epochs·데이터 양 필요
   checkpoint_interval_steps: 1  # 유지: 매 step 저장
   checkpoint_retention:  # 유지: 과거 step은 파라미터, 최신 step만 전체 재개 상태
     latest_full_resume_state: true
     older_parameter_snapshots: true
     older_optimizer_state: false
-  rollout_tensor_parallel_size: 1  # 예: 2 (학습 GPU가 [2, 3]일 때; GPU 개수의 약수)
-  rollouts_per_prompt: 16  # 예: 8 (질문당 생성 응답 수)
-  ppo_mini_batch_size: 96  # 예: 64 (global_prompt_batch의 약수)
-  learning_rate: 5.0e-6  # 예: 1.0e-6
-  warmup_ratio: 0.1  # 예: 0.05
-  kl_coefficient: 0.01  # 예: 0.02
-  max_prompt_length: 4096  # 예: 2048
-  max_response_length: 3584  # 예: 2048
-  rollout_temperature: 1.0  # 예: 0.8
-  rollout_top_p: 0.95  # 예: 0.9
+  rollout_tensor_parallel_size: 1  # 학습 GPU 개수의 약수
+  rollouts_per_prompt: 16
+  ppo_mini_batch_size: 96  # global_prompt_batch의 약수
+  learning_rate: 5.0e-6
+  warmup_ratio: 0.1
+  kl_coefficient: 0.01
+  max_prompt_length: 4096
+  max_response_length: 3584
+  rollout_temperature: 1.0
+  rollout_top_p: 0.95
 
 infrastructure:
-  code_host: ''  # 기록용; 빈 값 허용; 예: train-node (선택적 기록용 라벨; SSH 접속 대상 아님)
+  code_host: ''  # 기록용; 빈 값 허용; SSH 접속 대상 아님
   optimizer:
-    host: ''  # 기록용; 빈 값 허용; 예: train-node (기록용; 비워도 됨)
+    host: ''  # 기록용; 빈 값 허용
     gpus: [1]  # [REQUIRED] 사용할 학습 GPU; 예: [2] 또는 [2, 3] (현재 머신의 GPU 번호; 추론과 겹치지 않게)
   services:
     qwen3_32b:
-      hosts: ['']  # 기록용; 빈 값 허용; 예: [judge-node] (선택적 기록용)
+      hosts: ['']  # 기록용; 빈 값 허용
       instances:
-        - host: ''  # 기록용; 빈 값 허용; 예: judge-node (실제 서비스 명령은 추론 머신에서 직접 실행)
+        - host: ''  # 기록용; 빈 값 허용; 서비스는 추론 머신에서 직접 실행
           gpus: [0, 1]  # [REQUIRED] 해당 추론 서버 시작 시 확인; 예: [0, 1] (추론 머신 기준 번호)
           tensor_parallel_size: 2  # [REQUIRED] 해당 추론 서버 시작 시 확인; 예: 2 (위 gpus 목록 길이와 일치)
           vllm_bin: .venvs/judge/bin/vllm  # [REQUIRED] 해당 추론 서버 시작 시 확인; 예: /path/to/judge-env/bin/vllm
           python: .venvs/judge/bin/python  # [REQUIRED] Static 점수 프록시용 Python; 예: /path/to/judge-env/bin/python
-          bind_host: 127.0.0.1  # 예: 127.0.0.1 (원격 접속은 SSH 터널 권장)
+          bind_host: 127.0.0.1  # 원격 접속은 SSH 터널 권장
           port: 28136  # [REQUIRED] 해당 추론 서버 시작 시 확인; 예: 29136 (raw vLLM 포트; 미사용 포트 선택)
           proxy_port: 28137  # [REQUIRED] 해당 추론 서버 시작 시 확인; 예: 29137 (아래 DYNAMIC_RUBRIC_VLLM_URL도 맞춤)
           gpu_memory_utilization: 0.90  # [REQUIRED] 해당 추론 서버 시작 시 확인; 예: 0.80 (모델 적재 가능한 VRAM 필요; 같은 GPU 서비스 합계 확인)
-          max_model_len: 32768  # 예: 16384 (judge 입력+응답을 수용할 길이)
-          max_num_seqs: 16  # 예: 32 (VRAM 여유가 있을 때 동시 처리 확대)
-          max_num_batched_tokens: 2048  # 예: 4096 (속도·VRAM 함께 확인)
+          max_model_len: 32768  # judge 입력+응답을 수용할 길이
+          max_num_seqs: 16  # VRAM 여유에 맞춰 조정
+          max_num_batched_tokens: 2048  # 처리 속도와 VRAM 함께 확인
           dtype: bfloat16
 
 output:
@@ -85,13 +85,13 @@ launch:
     # Service addresses and low-level systems knobs; these are passed through.
     DYNAMIC_RUBRIC_VLLM_URL: http://127.0.0.1:28137  # [REQUIRED]; 예: http://127.0.0.1:29137 (점수 프록시/터널 포트)
     DYNAMIC_RUBRIC_GRADER_TIMEOUT_SECONDS: '14400'
-    ROLLOUT_GPU_MEMORY: '0.14'  # 예: '0.20' (학습 GPU의 rollout 메모리 비율)
+    ROLLOUT_GPU_MEMORY: '0.14'
     ROLLOUT_MAX_NUM_SEQS: '32'
     ROLLOUT_MAX_NUM_BATCHED_TOKENS: '8192'
     ROLLOUT_UPDATE_WEIGHTS_BUCKET_MEGABYTES: '512'
     ROLLOUT_KV_CACHE_MEMORY_BYTES: '8589934592'
     ROLLOUT_AGENT_NUM_WORKERS: '16'
-    REWARD_NUM_WORKERS: '32'  # 예: '16' (judge 처리량에 맞춘 요청 동시성)
+    REWARD_NUM_WORKERS: '32'  # judge 처리량에 맞춘 요청 동시성
     ACTOR_MAX_TOKEN_LEN: '8192'
     ROLLOUT_LOG_PROB_MAX_TOKEN_LEN: '8192'
     REF_LOG_PROB_MAX_TOKEN_LEN: '8192'

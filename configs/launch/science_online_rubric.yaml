@@ -1,4 +1,4 @@
-# 표시가 없는 항목도 설정 키는 유지하고, 설명과 예시에 따라 필요한 값을 조정합니다.
+# 표시가 없는 항목도 설정 키는 유지하고, 설명에 따라 필요한 값을 조정합니다.
 # [REQUIRED] 실행 전 확인·준비 필수. 기본값이 내 환경과 맞으면 그대로 사용합니다.
 # 추론 서버/Online 사전 생성 항목은 해당 단계를 직접 실행할 때 확인합니다.
 # Science OnlineRubrics. Common sections match the Static and Evo recipes.
@@ -8,19 +8,17 @@ schema_version: 1
 experiment: phase1_evaluator_update_value
 domain: science
 method: online_rubrics
-# 예: seed를 23으로 바꾸면 probe seed/manifest와 pi0 cache도 seed-23으로 분리합니다.
+# seed 변경 시 probe seed/manifest와 pi0 cache도 함께 분리합니다.
 seed: 11
 data:  # [REQUIRED] 실제 데이터 경로 확인; 외부 평가 항목은 아래 별도 표시
   # 예: 1200개 JSONL이면 1200으로 설정하며 실제 train 행 수와 정확히 일치해야 합니다.
   train_prompt_count: 1500  # [REQUIRED]
   fixed_train_probe:  # 기본 probe 설정 사용; seed/data 변경 시 연동 확인
     count: 100  # 100개 유지
-    # 위 seed 변경 예시에서는 이 값도 23으로 맞춥니다.
     sample_seed: 11  # seed 변경 시 함께 변경
     source: train
     remains_in_training: true
     extra_responses_used_for_gradient: false
-    # 예: seed 23이면 outputs/{domain}/shared/seed-23/manifests/fixed_train_probe.json
     manifest: outputs/{domain}/shared/seed-11/manifests/fixed_train_probe.json  # seed 변경 시 함께 변경
   in_domain_policy_eval:  # [REQUIRED] heldout 데이터 준비
     count: 300  # [REQUIRED]
@@ -68,11 +66,11 @@ models:  # 모델 ID/revision 유지; local_snapshot 경로는 별도 REQUIRED
 # 학습값을 바꾸려면 launch.tuning_mode을 custom으로 설정합니다(paper는 재현값 고정).
 training:  # 기본 학습값 사용 가능; 고정 항목 제외
   algorithm: grpo
-  # 예: 2 epochs. 데이터/batch로 계산되는 step이 expected_global_steps보다 먼저 끝날 수 있습니다.
+  # 데이터/batch로 계산되는 step이 expected_global_steps보다 먼저 끝날 수 있습니다.
   epochs: 3
-  # 예: 64; ppo_mini_batch_size는 이 값의 약수로 둡니다.
+  # ppo_mini_batch_size는 global_prompt_batch의 약수로 둡니다.
   global_prompt_batch: 96
-  # 예: 32; 줄이면 아래 audit/reuse/analysis anchor에서 32 초과 값을 제거합니다.
+  # 종료 step을 줄이면 audit/reuse/analysis anchor도 해당 범위에 맞춥니다.
   expected_global_steps: 48
   # 유지: 매 step 저장은 고정이며 1을 유지합니다.
   checkpoint_interval_steps: 1
@@ -81,19 +79,16 @@ training:  # 기본 학습값 사용 가능; 고정 항목 제외
     latest_full_resume_state: true
     older_parameter_snapshots: true
     older_optimizer_state: false
-  # 아래 값은 custom 모드에서만 변경합니다. 예: global batch 64이면 mini batch 32.
+  # 아래 값은 custom 모드에서만 변경합니다.
   ppo_mini_batch_size: 96
-  # 예: prompt 3072 / response 2048; 데이터 길이와 VRAM을 함께 확인합니다.
+  # 입력/응답 길이는 데이터 길이와 VRAM을 함께 확인합니다.
   max_prompt_length: 4096
   max_response_length: 3584
-  # 예: 학습 GPU [2,3]에서 TP 2; GPU 개수를 정확히 나누어야 합니다.
+  # rollout TP는 학습 GPU 개수의 약수여야 합니다.
   rollout_tensor_parallel_size: 1
-  # 예: 1.0e-6
   learning_rate: 5.0e-6
   warmup_ratio: 0.1
-  # 예: 0.02
   kl_coefficient: 0.01
-  # 예: temperature 0.8 / top-p 0.9
   rollout_temperature: 1.0
   rollout_top_p: 0.95
   audit_checkpoints:  # 종료 step 변경 시 범위도 맞춤
@@ -122,7 +117,7 @@ training:  # 기본 학습값 사용 가능; 고정 항목 제외
     - cumulative_policy_kl_from_pi0
     - response_length
 infrastructure:
-  # 선택적 기록값 예: trainer; 실제 배치/SSH에는 사용되지 않으므로 빈 값도 허용됩니다.
+  # 기록용 값은 실제 배치/SSH에 사용되지 않으며 빈 값도 허용됩니다.
   code_host: ''  # 기록용; 빈 값 허용
   optimizer:
     host: ''  # 기록용; 빈 값 허용
@@ -137,7 +132,7 @@ infrastructure:
           # 예: inference GPU [0,1]에서 TP 2; TP는 GPU 목록 길이와 같아야 합니다.
           gpus: [0, 1]  # [REQUIRED] 해당 추론 서버 시작 시 확인
           tensor_parallel_size: 2  # [REQUIRED] 해당 추론 서버 시작 시 확인
-          # 예: /path/to/judge-venv/bin/vllm 및 /path/to/judge-venv/bin/python
+          # 예: /path/to/judge-venv/bin/vllm
           vllm_bin: .venvs/judge/bin/vllm  # [REQUIRED] 해당 추론 서버 시작 시 확인
           python: .venvs/judge/bin/python  # 이 방법의 raw vLLM 서비스에서는 미사용
           bind_host: 127.0.0.1
@@ -146,9 +141,9 @@ infrastructure:
           # 예: 0.45; Qwen과 GPU를 공유하면 두 서버 utilization 합과 runtime overhead를 함께 계산합니다.
           gpu_memory_utilization: 0.48  # [REQUIRED] 해당 추론 서버 시작 시 확인
           max_model_len: 32768
-          # 예: max_num_seqs 8 / max_num_batched_tokens 1024; 처리량보다 OOM 안정성을 우선할 때 낮춥니다.
-          max_num_seqs: 16  # 예: 32 (VRAM 여유가 있을 때)
-          max_num_batched_tokens: 2048  # 예: 4096 (처리 속도와 VRAM 함께 확인)
+          # OOM 발생 시 max_num_seqs와 max_num_batched_tokens를 낮춥니다.
+          max_num_seqs: 16  # VRAM 여유에 맞춰 조정
+          max_num_batched_tokens: 2048  # 처리 속도와 VRAM 함께 확인
           dtype: auto
       tensor_parallel_size: 2  # 공통 메타데이터; 실제 TP는 instances에서 설정
       base_url_env: PHASE1_GPT_OSS_BASE_URLS
@@ -160,7 +155,7 @@ infrastructure:
           # 예: inference GPU [0,1]에서 TP 2; GPT-OSS와 동시 실행 시 GPU/VRAM 중복을 피합니다.
           gpus: [0, 1]  # [REQUIRED] 해당 추론 서버 시작 시 확인
           tensor_parallel_size: 2  # [REQUIRED] 해당 추론 서버 시작 시 확인
-          # 예: /path/to/judge-venv/bin/vllm 및 /path/to/judge-venv/bin/python
+          # 예: /path/to/judge-venv/bin/vllm
           vllm_bin: .venvs/judge/bin/vllm  # [REQUIRED] 해당 추론 서버 시작 시 확인
           python: .venvs/judge/bin/python  # 이 방법의 raw vLLM 서비스에서는 미사용
           bind_host: 127.0.0.1
@@ -168,9 +163,8 @@ infrastructure:
           port: 28014  # [REQUIRED] 해당 추론 서버 시작 시 확인
           gpu_memory_utilization: 0.46  # [REQUIRED] 해당 추론 서버 시작 시 확인
           max_model_len: 32768
-          # 예: max_num_seqs 8 / max_num_batched_tokens 1024
-          max_num_seqs: 16  # 예: 32 (VRAM 여유가 있을 때)
-          max_num_batched_tokens: 2048  # 예: 4096 (처리 속도와 VRAM 함께 확인)
+          max_num_seqs: 16  # VRAM 여유에 맞춰 조정
+          max_num_batched_tokens: 2048  # 처리 속도와 VRAM 함께 확인
           dtype: bfloat16
       base_url_env: PHASE1_QWEN32B_BASE_URLS
   pi0_control:  # [REQUIRED] Online 제어 응답을 사전 생성할 때 확인
@@ -183,13 +177,12 @@ infrastructure:
     runtime_python: .venvs/judge/bin/python  # [REQUIRED] 사전 생성 시 확인
     gpu_memory_utilization: 0.45  # [REQUIRED] 사전 생성 시 확인
     max_model_len: 7680
-    # 예: max_num_seqs 32 / max_num_batched_tokens 8192
     max_num_seqs: 64
     max_num_batched_tokens: 16384
     # 예: upstream 18101 / proxy 18102; 사용 중이지 않은 포트를 선택합니다.
     upstream_port: 28101  # [REQUIRED] 사전 생성 시 확인
     proxy_port: 28102  # [REQUIRED] 사전 생성 시 확인
-    # 예: 32; OOM/timeout이 나면 낮춥니다.
+    # OOM/timeout 발생 시 동시 요청 수를 낮춥니다.
     concurrency: 16
     progress_every: 25
     free_memory_threshold_mib: 1024
@@ -209,7 +202,7 @@ launch:
   entry_python: .venvs/verl/bin/python  # [REQUIRED] 실행 가능한 학습 runtime Python
   # 예: phase1-online-rubrics-science-full-exp02; 새 실험마다 고유하게 지정합니다.
   run_id: phase1-online-rubrics-science-full-run001  # [REQUIRED] 신규 실험은 고유 ID, 재개는 기존 ID
-  # 예: custom (학습값 변경 시); paper는 논문 재현 기본값을 검사합니다.
+  # paper 모드는 논문 재현 기본값을 검사합니다.
   tuning_mode: paper  # 학습값을 바꿀 때 custom 사용
   environment:  # 성능/실행 옵션은 기본값 사용 가능; REQUIRED 항목은 개별 확인
     # 예: /path/to/verl-venv/bin/python; 위 launch.entry_python과 같은 runtime을 지정합니다.
@@ -219,9 +212,9 @@ launch:
     # URL 개수는 service instances 개수와 맞춥니다. 예: http://127.0.0.1:18002
     PHASE1_QWEN32B_BASE_URLS: http://127.0.0.1:28014  # [REQUIRED]
     PHASE1_QWEN32B_EXPECTED_COUNT: '1'
-    # seed 23 예시에서는 별도 seed-23 cache를 생성해 지정합니다.
+    # 예: seed를 23으로 바꾼 경우 별도 seed-23 cache를 생성해 지정합니다.
     ONLINE_CONTROL_CACHE_DIR: outputs/science/shared/seed-11/pi0_control_cache  # [REQUIRED] 학습 전에 생성된 pi0 cache/manifest 필요
-    # 예: extractor 24 / grader 32; 서버 처리량과 timeout에 맞춥니다.
+    # 요청 동시성은 서버 처리량과 timeout에 맞춥니다.
     ONLINE_EXTRACTOR_CONCURRENCY: '48'
     ONLINE_GRADER_CONCURRENCY: '64'
     ONLINE_LOGPROB_PREFETCH: 'true'
@@ -253,7 +246,6 @@ analysis:  # 기본 검증/분석 계약 유지; reuse_anchors는 아래 별도 
   enable_bon: false
   pool_a_b_disjoint: true
   # training.reuse_anchors를 줄였다면 이 목록도 같은 step 범위로 맞춥니다.
-  # 예: 종료 step이 32이면 [0, 9, 16, 32]; training.reuse_anchors와 함께 맞춥니다.
   reuse_anchors:  # training.reuse_anchors와 종료 step 연동
     - 0
     - 9

@@ -1,4 +1,4 @@
-# 표시가 없는 항목도 설정 키는 유지하고, 설명과 예시에 따라 필요한 값을 조정합니다.
+# 표시가 없는 항목도 설정 키는 유지하고, 설명에 따라 필요한 값을 조정합니다.
 # [REQUIRED] 실행 전 확인·준비 필수. 기본값이 내 환경과 맞으면 그대로 사용합니다.
 # 추론 서버/Online 사전 생성 항목은 해당 단계를 직접 실행할 때 확인합니다.
 # Medicine EvoRubrics (RaR, not the original-ZIP HealthBench recipe).
@@ -9,26 +9,23 @@ schema_version: 1
 experiment: phase1_evaluator_update_value
 domain: medicine
 method: evorubrics
-# 예: seed를 23으로 바꾸면 probe seed와 manifest 경로도 seed-23으로 분리합니다.
+# seed 변경 시 probe seed와 manifest 경로도 함께 분리합니다.
 seed: 11
 data:  # [REQUIRED] 실제 데이터 경로 확인; 외부 평가 항목은 아래 별도 표시
   # 예: 1200개 JSONL이면 1200으로 설정하며 실제 train 행 수와 정확히 일치해야 합니다.
   train_prompt_count: 1500  # [REQUIRED]
   fixed_train_probe:  # 기본 probe 설정 사용; seed/data 변경 시 연동 확인
     count: 100  # 100개 유지
-    # 위 seed 변경 예시에서는 이 값도 23으로 맞춥니다.
     sample_seed: 11  # seed 변경 시 함께 변경
     source: train
     remains_in_training: true
     extra_responses_used_for_gradient: false
-    # 예: seed 23이면 outputs/{domain}/shared/seed-23/manifests/fixed_train_probe.json
     manifest: outputs/{domain}/shared/seed-11/manifests/fixed_train_probe.json  # seed 변경 시 함께 변경
   # 예: 별도 평가 파일은 /path/to/in_domain_final.jsonl처럼 지정할 수 있습니다.
   in_domain_policy_eval:  # [REQUIRED] heldout 데이터 준비
     count: 300  # [REQUIRED]
     policy_only: true
     path: data/rar/medicine/eval300/final.jsonl  # [REQUIRED]
-  # 예: 외부 평가는 /path/to/external_eval.jsonl을 준비하고 아래 path를 바꿉니다.
   external_policy_eval:  # 별도 외부 평가용; 공통 검증에 필요하므로 블록 유지
     policy_only: true
     name: HealthBench
@@ -59,11 +56,10 @@ models:  # 모델 ID/revision 유지; local_snapshot 경로는 별도 REQUIRED
 # 학습값을 바꾸려면 launch.tuning_mode을 custom으로 설정합니다(paper는 재현값 고정).
 training:  # 기본 학습값 사용 가능; 고정 항목 제외
   algorithm: grpo
-  # 예: 2 epochs. 데이터/batch로 계산되는 step이 expected_global_steps보다 먼저 끝날 수 있습니다.
+  # 데이터/batch로 계산되는 step이 expected_global_steps보다 먼저 끝날 수 있습니다.
   epochs: 3
-  # 예: 64
   global_prompt_batch: 96
-  # 예: 32; 줄이면 아래 audit/reuse/analysis anchor에서 32 초과 값을 제거합니다.
+  # 종료 step을 줄이면 audit/reuse/analysis anchor도 해당 범위에 맞춥니다.
   expected_global_steps: 48
   # 유지: 매 step policy/generator LoRA 저장은 고정이며 1을 유지합니다.
   checkpoint_interval_steps: 1
@@ -72,7 +68,6 @@ training:  # 기본 학습값 사용 가능; 고정 항목 제외
     latest_full_resume_state: true
     older_parameter_snapshots: true
     older_optimizer_state: false
-  # step 32 예시라면 40, 48을 제거하고 마지막 값을 32 이하로 맞춥니다.
   audit_checkpoints:  # 종료 step 변경 시 범위도 맞춤
     - 0
     - 3
@@ -99,7 +94,7 @@ training:  # 기본 학습값 사용 가능; 고정 항목 제외
     - cumulative_policy_kl_from_pi0
     - response_length
 infrastructure:
-  # 선택적 기록값 예: trainer; 실제 배치/SSH에는 사용되지 않으므로 빈 값도 허용됩니다.
+  # 기록용 값은 실제 배치/SSH에 사용되지 않으며 빈 값도 허용됩니다.
   code_host: ''  # 기록용; 빈 값 허용
   optimizer:
     host: ''  # 기록용; 빈 값 허용
@@ -114,7 +109,7 @@ infrastructure:
           # 예: inference GPU [0,1]에서 TP 2; TP는 GPU 목록 길이와 같아야 합니다.
           gpus: [0, 1]  # [REQUIRED] 해당 추론 서버 시작 시 확인
           tensor_parallel_size: 2  # [REQUIRED] 해당 추론 서버 시작 시 확인
-          # 예: /path/to/judge-venv/bin/vllm 및 /path/to/judge-venv/bin/python
+          # 예: /path/to/judge-venv/bin/vllm
           vllm_bin: .venvs/judge/bin/vllm  # [REQUIRED] 해당 추론 서버 시작 시 확인
           python: .venvs/judge/bin/python  # 이 방법의 raw vLLM 서비스에서는 미사용
           bind_host: 127.0.0.1
@@ -123,9 +118,9 @@ infrastructure:
           # 예: 0.85; 실제 VRAM에 맞춰 batching 값과 함께 조정합니다.
           gpu_memory_utilization: 0.48  # [REQUIRED] 해당 추론 서버 시작 시 확인
           max_model_len: 32768
-          # 예: max_num_seqs 8 / max_num_batched_tokens 1024; OOM이면 먼저 낮춥니다.
-          max_num_seqs: 16  # 예: 32 (VRAM 여유가 있을 때)
-          max_num_batched_tokens: 2048  # 예: 4096 (처리 속도와 VRAM 함께 확인)
+          # OOM 발생 시 max_num_seqs와 max_num_batched_tokens를 낮춥니다.
+          max_num_seqs: 16  # VRAM 여유에 맞춰 조정
+          max_num_batched_tokens: 2048  # 처리 속도와 VRAM 함께 확인
           dtype: auto
       tensor_parallel_size: 2  # 공통 메타데이터; 실제 TP는 instances에서 설정
       base_url_env: PHASE1_GPT_OSS_BASE_URLS
@@ -180,7 +175,7 @@ launch:
   entry_python: .venvs/evorubrics/bin/python  # [REQUIRED] 실행 가능한 학습 runtime Python
   # 예: phase1-evo-medicine-exp02; 새 실험마다 고유하게 지정합니다.
   run_id: phase1-evo-medicine-run001  # [REQUIRED] 신규 실험마다 고유 ID; 현재 Evo 본 학습은 resume 미지원
-  # 예: custom (Evo/학습값 변경 시); paper는 논문 재현 기본값을 검사합니다.
+  # paper 모드는 논문 재현 기본값을 검사합니다.
   tuning_mode: paper  # 학습값을 바꿀 때 custom 사용
   # 예: phase1-evo-medicine-smoke02; run_id와 별도로 새 실험마다 고유하게 지정합니다.
   smoke_run_id: phase1-evo-medicine-smoke001  # [REQUIRED] Evo 사전 검증용 고유 ID
@@ -190,24 +185,20 @@ launch:
 evorubrics:  # custom 모드 튜닝; 고정 항목 제외
   policy_adapter: theta
   rubric_generator_adapter: psi
-  # 예: M=2, N=3이면 pool_b_count=6으로 바꾸고 seed 목록도 정확히 3개로 맞춥니다.
+  # pool_b_count는 policy_responses_m × rubric_sets_n, seed 목록 길이는 rubric_sets_n과 같아야 합니다.
   policy_responses_m: 4  # custom 모드에서만 변경
   rubric_sets_n: 4  # custom 모드에서만 변경
   pool_b_count: 16  # custom 모드에서만 변경
   dataset_mode: open_rubrics
   training_flow: unified
-  # 아래 값은 custom 모드에서만 변경합니다. 예: LoRA rank 16 / alpha 32.
+  # 아래 값은 custom 모드에서만 변경합니다.
   lora_rank: 32  # custom 모드에서만 변경
   lora_alpha: 64  # custom 모드에서만 변경
-  # 예: policy LR 1.0e-5
   policy_learning_rate: 2.0e-05  # custom 모드에서만 변경
-  # 예: rubric generator LR 3.0e-6
   rubric_generator_learning_rate: 5.0e-06  # custom 모드에서만 변경
-  # 예: 0.001
   kl_loss_coefficient: 0.0001  # custom 모드에서만 변경
-  # 예: 0.8
   generation_temperature: 0.7  # custom 모드에서만 변경
-  # 합은 1이어야 합니다. 예: similarity/discrimination/diversity/reflect = 0.4/0.3/0.2/0.1
+  # 합은 1이어야 합니다.
   reward_weights:  # custom 모드에서만 변경
     similarity: 0.25
     discrimination: 0.25
@@ -216,7 +207,6 @@ evorubrics:  # custom 모드 튜닝; 고정 항목 제외
   reflect_use_golden_rubrics: true
   save_policy_and_generator: true
   fixed_rubric_generation_seeds: true
-  # 예: N=3이면 [23001, 23002, 23003]; pool_b_count도 policy_responses_m × 3으로 변경합니다.
   rubric_generation_seeds:  # custom 모드에서만 변경
     - 11001
     - 11002
@@ -236,7 +226,6 @@ analysis:  # 기본 검증/분석 계약 유지; reuse_anchors는 아래 별도 
   enable_bon: false
   pool_a_b_disjoint: true
   # training.reuse_anchors를 줄였다면 이 목록도 같은 step 범위로 맞춥니다.
-  # 예: 종료 step이 32이면 [0, 9, 16, 32]; training.reuse_anchors와 함께 맞춥니다.
   reuse_anchors:  # training.reuse_anchors와 종료 step 연동
     - 0
     - 9
