@@ -1,23 +1,21 @@
-# 설정 표시: 값의 삭제 가능 여부가 아니라 사용자가 확인/수정할 우선순위입니다.
+# 표시가 없는 항목도 설정 키는 유지하고, 설명과 예시에 따라 필요한 값을 조정합니다.
 # [REQUIRED] 실행 전 확인·준비 필수. 기본값이 내 환경과 맞으면 그대로 사용합니다.
-# [OPTIONAL] 선택적 튜닝/기록. 기본값 사용 가능하며, 키·블록 삭제를 뜻하지 않습니다.
-# [FIXED] 실험 계약상 유지할 값입니다. 별도 표시 없는 하위 값은 상위 표시를 따릅니다.
 # 추론 서버/Online 사전 생성 항목은 해당 단계를 직접 실행할 때 확인합니다.
 # Science Static R0. Edit data/models/training/infrastructure/output/launch below.
 # 먼저 확인: data 경로, models.local_snapshot, 학습/추론 GPU, 실행 파일, 서비스 URL, run_id.
 # '예:'는 수정 방법을 보여주는 주석입니다. 현재 기본값은 그대로이며 상대경로는 저장소 루트 기준입니다.
-schema_version: 1  # [FIXED]
-experiment: matched_static_r0_grpo  # [FIXED]
-domain: science  # [FIXED]
-method: static_r0_matched  # [FIXED]
-seed: 11  # [OPTIONAL]; 예: 23 (새 seed의 실험은 run_id도 구분)
+schema_version: 1
+experiment: matched_static_r0_grpo
+domain: science
+method: static_r0_matched
+seed: 11  # 예: 23 (새 seed의 실험은 run_id도 구분)
 
 data:  # [REQUIRED] 실제 데이터 경로 확인; 외부 평가 항목은 아래 별도 표시
   train_path: data/rar/science/verl/train.parquet  # [REQUIRED]; 예: /path/to/rar/science/train.parquet
   validation_path: data/rar/science/verl/development.parquet  # [REQUIRED]; 예: /path/to/rar/science/development.parquet
   static_rubric_path: data/rar/science/public/train.jsonl  # [REQUIRED]; 예: /path/to/rar/science/train.jsonl (parquet와 같은 질문의 rubric)
 
-models:  # [FIXED] 모델 ID/revision 유지; local_snapshot 경로는 별도 REQUIRED
+models:  # 모델 ID/revision 유지; local_snapshot 경로는 별도 REQUIRED
   policy:
     model: Qwen/Qwen3-4B-Instruct-2507
     revision: cdbee75f17c01a7cc42f958dc650907174af0554
@@ -28,53 +26,53 @@ models:  # [FIXED] 모델 ID/revision 유지; local_snapshot 경로는 별도 RE
     tokenizer_revision: 9216db5781bf21249d130ec9da846c4624c16137
     local_snapshot: models/Qwen3-32B  # [REQUIRED] 해당 추론 서버를 직접 시작할 때의 모델 경로; 예: /path/to/models/Qwen3-32B (judge 머신에서 접근 가능해야 함)
 
-training:  # [OPTIONAL] 기본 학습값 사용 가능; FIXED 항목 제외
-  algorithm: grpo  # [FIXED]
-  epochs: 3  # [OPTIONAL]; 예: 4
-  global_prompt_batch: 96  # [OPTIONAL]; 예: 64 (ppo_mini_batch_size도 64 또는 약수로 설정)
-  expected_global_steps: 48  # [OPTIONAL]; 예: 32 (도달 가능한 epochs·데이터 양 필요)
-  checkpoint_interval_steps: 1  # [FIXED]; 유지: 매 step 저장
-  checkpoint_retention:  # [FIXED]; 유지: 과거 step은 파라미터, 최신 step만 전체 재개 상태
+training:  # 기본 학습값 사용 가능; 고정 항목 제외
+  algorithm: grpo
+  epochs: 3  # 예: 4
+  global_prompt_batch: 96  # 예: 64 (ppo_mini_batch_size도 64 또는 약수로 설정)
+  expected_global_steps: 48  # 예: 32 (도달 가능한 epochs·데이터 양 필요)
+  checkpoint_interval_steps: 1  # 유지: 매 step 저장
+  checkpoint_retention:  # 유지: 과거 step은 파라미터, 최신 step만 전체 재개 상태
     latest_full_resume_state: true
     older_parameter_snapshots: true
     older_optimizer_state: false
-  rollout_tensor_parallel_size: 1  # [OPTIONAL]; 예: 2 (학습 GPU가 [2, 3]일 때; GPU 개수의 약수)
-  rollouts_per_prompt: 16  # [OPTIONAL]; 예: 8 (질문당 생성 응답 수)
-  ppo_mini_batch_size: 96  # [OPTIONAL]; 예: 64 (global_prompt_batch의 약수)
-  learning_rate: 5.0e-6  # [OPTIONAL]; 예: 1.0e-6
-  warmup_ratio: 0.1  # [OPTIONAL]; 예: 0.05
-  kl_coefficient: 0.01  # [OPTIONAL]; 예: 0.02
-  max_prompt_length: 4096  # [OPTIONAL]; 예: 2048
-  max_response_length: 3584  # [OPTIONAL]; 예: 2048
-  rollout_temperature: 1.0  # [OPTIONAL]; 예: 0.8
-  rollout_top_p: 0.95  # [OPTIONAL]; 예: 0.9
+  rollout_tensor_parallel_size: 1  # 예: 2 (학습 GPU가 [2, 3]일 때; GPU 개수의 약수)
+  rollouts_per_prompt: 16  # 예: 8 (질문당 생성 응답 수)
+  ppo_mini_batch_size: 96  # 예: 64 (global_prompt_batch의 약수)
+  learning_rate: 5.0e-6  # 예: 1.0e-6
+  warmup_ratio: 0.1  # 예: 0.05
+  kl_coefficient: 0.01  # 예: 0.02
+  max_prompt_length: 4096  # 예: 2048
+  max_response_length: 3584  # 예: 2048
+  rollout_temperature: 1.0  # 예: 0.8
+  rollout_top_p: 0.95  # 예: 0.9
 
 infrastructure:
-  code_host: ''  # [OPTIONAL] 기록용; 빈 값 허용; 예: train-node (선택적 기록용 라벨; SSH 접속 대상 아님)
+  code_host: ''  # 기록용; 빈 값 허용; 예: train-node (선택적 기록용 라벨; SSH 접속 대상 아님)
   optimizer:
-    host: ''  # [OPTIONAL] 기록용; 빈 값 허용; 예: train-node (기록용; 비워도 됨)
+    host: ''  # 기록용; 빈 값 허용; 예: train-node (기록용; 비워도 됨)
     gpus: [1]  # [REQUIRED] 사용할 학습 GPU; 예: [2] 또는 [2, 3] (현재 머신의 GPU 번호; 추론과 겹치지 않게)
   services:
     qwen3_32b:
-      hosts: ['']  # [OPTIONAL] 기록용; 빈 값 허용; 예: [judge-node] (선택적 기록용)
+      hosts: ['']  # 기록용; 빈 값 허용; 예: [judge-node] (선택적 기록용)
       instances:
-        - host: ''  # [OPTIONAL] 기록용; 빈 값 허용; 예: judge-node (실제 서비스 명령은 추론 머신에서 직접 실행)
+        - host: ''  # 기록용; 빈 값 허용; 예: judge-node (실제 서비스 명령은 추론 머신에서 직접 실행)
           gpus: [0, 1]  # [REQUIRED] 해당 추론 서버 시작 시 확인; 예: [0, 1] (추론 머신 기준 번호)
           tensor_parallel_size: 2  # [REQUIRED] 해당 추론 서버 시작 시 확인; 예: 2 (위 gpus 목록 길이와 일치)
           vllm_bin: .venvs/judge/bin/vllm  # [REQUIRED] 해당 추론 서버 시작 시 확인; 예: /path/to/judge-env/bin/vllm
           python: .venvs/judge/bin/python  # [REQUIRED] Static 점수 프록시용 Python; 예: /path/to/judge-env/bin/python
-          bind_host: 127.0.0.1  # [OPTIONAL]; 예: 127.0.0.1 (원격 접속은 SSH 터널 권장)
+          bind_host: 127.0.0.1  # 예: 127.0.0.1 (원격 접속은 SSH 터널 권장)
           port: 28136  # [REQUIRED] 해당 추론 서버 시작 시 확인; 예: 29136 (raw vLLM 포트; 미사용 포트 선택)
           proxy_port: 28137  # [REQUIRED] 해당 추론 서버 시작 시 확인; 예: 29137 (아래 DYNAMIC_RUBRIC_VLLM_URL도 맞춤)
           gpu_memory_utilization: 0.90  # [REQUIRED] 해당 추론 서버 시작 시 확인; 예: 0.80 (모델 적재 가능한 VRAM 필요; 같은 GPU 서비스 합계 확인)
-          max_model_len: 32768  # [OPTIONAL]; 예: 16384 (judge 입력+응답을 수용할 길이)
-          max_num_seqs: 16  # [OPTIONAL]; 예: 32 (VRAM 여유가 있을 때 동시 처리 확대)
-          max_num_batched_tokens: 2048  # [OPTIONAL]; 예: 4096 (속도·VRAM 함께 확인)
-          dtype: bfloat16  # [OPTIONAL]
+          max_model_len: 32768  # 예: 16384 (judge 입력+응답을 수용할 길이)
+          max_num_seqs: 16  # 예: 32 (VRAM 여유가 있을 때 동시 처리 확대)
+          max_num_batched_tokens: 2048  # 예: 4096 (속도·VRAM 함께 확인)
+          dtype: bfloat16
 
 output:
   root: outputs  # [REQUIRED] 쓰기 권한·디스크 여유 확인; 기본 위치 사용 가능; 예: /path/to/experiment-outputs
-  layout: '{domain}/{method}/seed-{seed}/{run_id}'  # [FIXED]
+  layout: '{domain}/{method}/seed-{seed}/{run_id}'
 
 tracking:  # 실험 기록 이름; 기본값 사용 가능
   project: dynamic_rubric_static_r0_matched  # [REQUIRED] 비어 있지 않은 프로젝트명; 기본값 사용 가능; 예: rar-static-experiments
@@ -82,29 +80,29 @@ tracking:  # 실험 기록 이름; 기본값 사용 가능
 launch:
   entry_python: .venvs/verl/bin/python  # [REQUIRED] 실행 가능한 학습 runtime Python; 예: /path/to/verl-env/bin/python
   run_id: phase1-static-r0-science-run001  # [REQUIRED] 신규 실험은 고유 ID, 재개는 기존 ID; 예: phase1-static-r0-science-run002 (새 실험마다 변경)
-  tuning_mode: custom  # [FIXED] Static 실행기는 custom만 지원
-  environment:  # [OPTIONAL] 성능/실행 옵션은 기본값 사용 가능; REQUIRED 항목은 개별 확인
+  tuning_mode: custom  # Static 실행기는 custom만 지원
+  environment:  # 성능/실행 옵션은 기본값 사용 가능; REQUIRED 항목은 개별 확인
     # Service addresses and low-level systems knobs; these are passed through.
     DYNAMIC_RUBRIC_VLLM_URL: http://127.0.0.1:28137  # [REQUIRED]; 예: http://127.0.0.1:29137 (점수 프록시/터널 포트)
-    DYNAMIC_RUBRIC_GRADER_TIMEOUT_SECONDS: '14400'  # [OPTIONAL]
-    ROLLOUT_GPU_MEMORY: '0.14'  # [OPTIONAL]; 예: '0.20' (학습 GPU의 rollout 메모리 비율)
-    ROLLOUT_MAX_NUM_SEQS: '32'  # [OPTIONAL]
-    ROLLOUT_MAX_NUM_BATCHED_TOKENS: '8192'  # [OPTIONAL]
-    ROLLOUT_UPDATE_WEIGHTS_BUCKET_MEGABYTES: '512'  # [OPTIONAL]
-    ROLLOUT_KV_CACHE_MEMORY_BYTES: '8589934592'  # [OPTIONAL]
-    ROLLOUT_AGENT_NUM_WORKERS: '16'  # [OPTIONAL]
-    REWARD_NUM_WORKERS: '32'  # [OPTIONAL]; 예: '16' (judge 처리량에 맞춘 요청 동시성)
-    ACTOR_MAX_TOKEN_LEN: '8192'  # [OPTIONAL]
-    ROLLOUT_LOG_PROB_MAX_TOKEN_LEN: '8192'  # [OPTIONAL]
-    REF_LOG_PROB_MAX_TOKEN_LEN: '8192'  # [OPTIONAL]
-    ATTN_IMPLEMENTATION: sdpa  # [OPTIONAL]
-    ENABLE_GRADIENT_CHECKPOINTING: 'True'  # [OPTIONAL]
-    USE_REMOVE_PADDING: 'False'  # [OPTIONAL]
-    USE_FUSED_KERNELS: 'False'  # [OPTIONAL]
-    FULL_DETERMINISM: 'False'  # [OPTIONAL]
-    ENFORCE_EAGER: 'False'  # [OPTIONAL]
-    REF_PARAM_OFFLOAD: 'True'  # [OPTIONAL]
-    ACTOR_PARAM_OFFLOAD: 'False'  # [OPTIONAL]
-    ACTOR_OPTIMIZER_OFFLOAD: 'True'  # [OPTIONAL]
-    TEST_FREQ: '-1'  # [OPTIONAL]
-    VAL_BEFORE_TRAIN: 'False'  # [OPTIONAL]
+    DYNAMIC_RUBRIC_GRADER_TIMEOUT_SECONDS: '14400'
+    ROLLOUT_GPU_MEMORY: '0.14'  # 예: '0.20' (학습 GPU의 rollout 메모리 비율)
+    ROLLOUT_MAX_NUM_SEQS: '32'
+    ROLLOUT_MAX_NUM_BATCHED_TOKENS: '8192'
+    ROLLOUT_UPDATE_WEIGHTS_BUCKET_MEGABYTES: '512'
+    ROLLOUT_KV_CACHE_MEMORY_BYTES: '8589934592'
+    ROLLOUT_AGENT_NUM_WORKERS: '16'
+    REWARD_NUM_WORKERS: '32'  # 예: '16' (judge 처리량에 맞춘 요청 동시성)
+    ACTOR_MAX_TOKEN_LEN: '8192'
+    ROLLOUT_LOG_PROB_MAX_TOKEN_LEN: '8192'
+    REF_LOG_PROB_MAX_TOKEN_LEN: '8192'
+    ATTN_IMPLEMENTATION: sdpa
+    ENABLE_GRADIENT_CHECKPOINTING: 'True'
+    USE_REMOVE_PADDING: 'False'
+    USE_FUSED_KERNELS: 'False'
+    FULL_DETERMINISM: 'False'
+    ENFORCE_EAGER: 'False'
+    REF_PARAM_OFFLOAD: 'True'
+    ACTOR_PARAM_OFFLOAD: 'False'
+    ACTOR_OPTIMIZER_OFFLOAD: 'True'
+    TEST_FREQ: '-1'
+    VAL_BEFORE_TRAIN: 'False'
