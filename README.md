@@ -124,3 +124,54 @@ bash scripts/phase1/train_science_online_rubric.sh
 - **콘솔 로그:** run 디렉터리와 같은 상위 폴더의 `_launch_logs/`에 저장합니다.
 
 세부 파라미터·다중 추론 인스턴스·재개 조건은 [학습 설정과 실행 경로](docs/phase1_training_entrypoints.md)를 참고하세요.
+
+## 7. 코드 구조
+
+주요 폴더와 대표 파일만 표시했습니다. 새 학습은 `configs/launch/`에서 설정하고, 1절의 `train_*.sh`로 실행합니다.
+
+```text
+dynamic_rubric/
+├── README.md
+├── pyproject.toml / uv.lock           # 실행기 패키지·의존성
+├── configs/
+│   ├── launch/                       # 6개 학습의 GPU·모델·학습값 설정
+│   ├── evaluation/                   # HealthBench·MedQA 등 평가 설정
+│   ├── analysis/                     # 분석 설정
+│   ├── schemas/                      # 데이터·rubric·로그 형식
+│   └── phase1/                       # 과거 실험 재현용 설정
+├── scripts/
+│   ├── phase1/
+│   │   ├── train_*.sh                # Medicine/Science × Static/Online/Evo
+│   │   ├── launch_training.py        # YAML 검증·공통 학습 실행기
+│   │   ├── serve_training.py         # judge·extractor 서비스 실행
+│   │   ├── setup_*_runtime.sh        # veRL·Evo 학습 환경 준비
+│   │   └── ...                       # 사전 생성·평가·재개·업로드
+│   └── ...                           # 기존 실험·운영 스크립트
+├── src/dynamic_rubric/
+│   ├── data/                         # 데이터 로딩·분할
+│   ├── rubrics/                      # rubric 추출·검증·갱신
+│   ├── prompt_versions/              # extractor·grader 프롬프트
+│   ├── providers/                    # vLLM·OpenAI API 연결
+│   ├── services/                     # 추론·점수 프록시
+│   ├── training/                     # reward·veRL 연동·ckpt 관리
+│   ├── phase1/                       # 학습 실험 실행·관찰·audit
+│   ├── evaluation/                   # 평가 점수·통계
+│   ├── reporting/                    # 분석표·시각화
+│   ├── horizon/                      # 장기 rubric 변화·진단
+│   └── ...                           # CLI·공통 설정·파이프라인
+├── environment/                      # requirements·lock·소스 재현 기록
+│   └── upstream/                     # 로컬 준비: veRL·EvoRubrics·평가 엔진
+├── patches/                          # 외부 학습 엔진에 적용하는 패치
+├── analysis/                         # 학습 dynamics·성능 분석 코드
+├── docs/                             # 상세 실행 안내
+├── tests/                            # 단위·통합·학습 경로 테스트
+├── data/                             # 로컬 준비: RaR 분할·평가 데이터
+├── outputs/                          # 실행 산출물: ckpt·로그·평가 응답
+├── results/                          # 분석 결과: CSV·JSON·그래프
+├── artifacts/                        # 과거 실험 기록·운영 자료·캐시
+└── archive/                          # 분리한 과거 코드·백업
+```
+
+학습 흐름은 **SH → YAML을 읽는 `launch_training.py` → 프로젝트 연동 코드와 upstream 학습 엔진 → `outputs/`**입니다. 학습·평가 산출물을 `analysis/`에서 분석한 결과는 `results/`에 저장합니다.
+
+`data/`, `outputs/`, `results/`, `artifacts/`, `archive/`, `environment/upstream/`와 가상환경은 GitHub에 포함하지 않습니다. 과거 실험 관련 파일은 `archive/` 외에 `scripts/`, `configs/phase1/`, `src/dynamic_rubric/horizon/`에도 일부 남아 있습니다.
